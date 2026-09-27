@@ -39,9 +39,9 @@ android {
       } else {
         val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/masjidku-release-key.jks"
         storeFile = file(keystorePath)
-        storePassword = System.getenv("STORE_PASSWORD") ?: "MasjidKU2026SecureKey!"
+        storePassword = System.getenv("STORE_PASSWORD")
         keyAlias = System.getenv("KEY_ALIAS") ?: "masjidku_key"
-        keyPassword = System.getenv("KEY_PASSWORD") ?: "MasjidKU2026SecureKey!"
+        keyPassword = System.getenv("KEY_PASSWORD")
       }
     }
   }
