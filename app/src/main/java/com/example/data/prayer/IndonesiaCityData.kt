@@ -32,6 +32,7 @@ object IndonesiaCityData {
         CityLocation("Kepulauan Seribu", "DKI Jakarta", -5.6122, 106.5604, 7.0),
 
         // === JAWA BARAT (WIB - 7.0) ===
+        CityLocation("Masjid Endan Andansih (Darangdan)", "Kab. Purwakarta, Jawa Barat", -6.6961, 107.4239, 7.0),
         CityLocation("Kota Bandung", "Jawa Barat", -6.9175, 107.6191, 7.0),
         CityLocation("Kab. Bandung", "Jawa Barat", -7.0253, 107.5198, 7.0),
         CityLocation("Kab. Bandung Barat", "Jawa Barat", -6.8443, 107.4932, 7.0),

@@ -250,12 +250,7 @@ fun PreAdhanCountdownOverlay(
 
     val customCountdownBitmap = remember(config?.customCountdownBgPath) {
         val path = config?.customCountdownBgPath.orEmpty()
-        if (path.isNotBlank()) {
-            try {
-                val f = File(path)
-                if (f.exists()) BitmapFactory.decodeFile(f.absolutePath)?.asImageBitmap() else null
-            } catch (_: Exception) { null }
-        } else null
+        com.example.util.BitmapUtils.decodeSampledBitmapFromFile(path, 1920, 1080)
     }
 
     val countdownResId = remember(config?.countdownBgPreset) {
@@ -615,12 +610,7 @@ fun IqomahOverlay(
 
     val customCountdownBitmap = remember(config?.customCountdownBgPath) {
         val path = config?.customCountdownBgPath.orEmpty()
-        if (path.isNotBlank()) {
-            try {
-                val f = File(path)
-                if (f.exists()) BitmapFactory.decodeFile(f.absolutePath)?.asImageBitmap() else null
-            } catch (_: Exception) { null }
-        } else null
+        com.example.util.BitmapUtils.decodeSampledBitmapFromFile(path, 1920, 1080)
     }
 
     val countdownResId = remember(config?.countdownBgPreset) {

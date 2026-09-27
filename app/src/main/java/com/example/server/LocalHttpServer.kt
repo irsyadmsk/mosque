@@ -3072,9 +3072,9 @@ class LocalHttpServer(
                         <button class="btn-logout" onclick="handleLogout()" title="Kunci & Keluar">🔒 Keluar</button>
                     </div>
                     <div style="font-size:11px; text-align:right;">
-                        <a href="https://app.alijaya.com/donasi" target="_blank" rel="noopener noreferrer" style="color:#FDE68A; text-decoration:none; font-weight:700; background:rgba(217,119,6,0.35); border:1px solid rgba(253,230,138,0.5); padding:2px 8px; border-radius:6px; display:inline-flex; align-items:center; gap:4px; transition:all 0.2s;" onmouseover="this.style.background='rgba(217,119,6,0.6)';this.style.borderColor='#FDE68A'" onmouseout="this.style.background='rgba(217,119,6,0.35)';this.style.borderColor='rgba(253,230,138,0.5)'">
-                            ❤️ Design by <u>ALIJAYA-NET</u>
-                        </a>
+                        <span style="color:#FDE68A; font-weight:700; background:rgba(217,119,6,0.35); border:1px solid rgba(253,230,138,0.5); padding:2px 8px; border-radius:6px; display:inline-flex; align-items:center; gap:4px;">
+                            ✨ Pengembang: <u>Muhammad Irsyad Sirojul Khoeir, S.Sos., M.Sos.</u>
+                        </span>
                     </div>
                 </div>
             </div>

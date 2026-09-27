@@ -217,8 +217,8 @@ MasjidKU-TV/
 
 1. **Clone repositori**:
    ```bash
-   git clone https://github.com/alijayanet/masjidku.git
-   cd masjidku
+   git clone https://github.com/irsyadmsk/mosque.git
+   cd mosque
    ```
 
 2. **Kompilasi APK Debug**:
@@ -261,8 +261,10 @@ Kontribusi, saran perbaikan, dan pelaporan *bug* sangat kami apresiasi!
 
 ---
 
-## 📄 Pengembang
+## 📄 Pengembang & Hak Cipta
 
-Dikembangkan dengan dedikasi untuk kemakmuran masjid oleh **[Ali Jaya Net](https://github.com/alijayanet)**.
+Dikembangkan dengan dedikasi untuk kemakmuran umat dan masjid oleh:
+**Muhammad Irsyad Sirojul Khoeir, S.Sos., M.Sos.**
 
 Jika aplikasi ini bermanfaat untuk masjid Anda, jangan lupa berikan bintang ⭐ pada repositori ini!
+Semoga menjadi amal jariyah yang terus mengalir pahalanya. Aamiin.

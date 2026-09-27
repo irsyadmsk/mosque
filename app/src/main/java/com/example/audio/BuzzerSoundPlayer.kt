@@ -1,5 +1,6 @@
 package com.example.audio
 
+import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
@@ -29,8 +30,8 @@ object BuzzerSoundPlayer {
                 // Harmonic chime notes (E4, G#4, B4, E5 arpeggio)
                 val notes = listOf(330, 415, 493, 659, 830, 987)
                 for (freq in notes) {
-                    playSyntheticTone(freq, 220)
-                    delay(120)
+                    playSyntheticTone(freq, 200)
+                    delay(30)
                 }
             } catch (e: Exception) {
                 // Fallback to ToneGenerator
@@ -55,9 +56,10 @@ object BuzzerSoundPlayer {
     }
 
     /**
-     * Synthesizes smooth sine wave tone via AudioTrack
+     * Synthesizes smooth sine wave tone via AudioTrack with proper lifecycle cleanup
      */
-    private fun playSyntheticTone(freqHz: Int, durationMs: Int) {
+    private suspend fun playSyntheticTone(freqHz: Int, durationMs: Int) {
+        var audioTrack: AudioTrack? = null
         try {
             val sampleRate = 22050
             val numSamples = (durationMs * sampleRate) / 1000
@@ -71,16 +73,34 @@ object BuzzerSoundPlayer {
                 buffer[i] = sample.toShort()
             }
 
-            val audioTrack = AudioTrack(
-                AudioManager.STREAM_MUSIC,
-                sampleRate,
-                AudioFormat.CHANNEL_OUT_MONO,
-                AudioFormat.ENCODING_PCM_16BIT,
-                buffer.size * 2,
-                AudioTrack.MODE_STATIC
-            )
+            audioTrack = AudioTrack.Builder()
+                .setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_ALARM)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build()
+                )
+                .setAudioFormat(
+                    AudioFormat.Builder()
+                        .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                        .setSampleRate(sampleRate)
+                        .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                        .build()
+                )
+                .setBufferSizeInBytes(buffer.size * 2)
+                .setTransferMode(AudioTrack.MODE_STATIC)
+                .build()
+
             audioTrack.write(buffer, 0, buffer.size)
             audioTrack.play()
-        } catch (_: Exception) {}
+            delay(durationMs.toLong() + 20L)
+        } catch (_: Exception) {
+        } finally {
+            try {
+                audioTrack?.stop()
+                audioTrack?.release()
+            } catch (_: Exception) {}
+        }
     }
 }
+

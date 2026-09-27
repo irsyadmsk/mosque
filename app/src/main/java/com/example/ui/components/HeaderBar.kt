@@ -90,13 +90,7 @@ fun HeaderBar(
         ) {
             // Load custom logo from disk if available
             val customLogoBitmap = remember(config.customLogoImagePath) {
-                if (config.customLogoImagePath.isNotBlank()) {
-                    try {
-                        val file = File(config.customLogoImagePath)
-                        if (file.exists()) BitmapFactory.decodeFile(file.absolutePath)?.asImageBitmap()
-                        else null
-                    } catch (_: Exception) { null }
-                } else null
+                com.example.util.BitmapUtils.decodeSampledBitmapFromFile(config.customLogoImagePath, 256, 256)
             }
 
             Box(

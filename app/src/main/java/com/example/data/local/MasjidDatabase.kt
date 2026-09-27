@@ -531,16 +531,16 @@ abstract class MasjidDatabase : RoomDatabase() {
             db.mosqueConfigDao().insertOrUpdate(
                 MosqueConfigEntity(
                     id = 1,
-                    mosqueName = "MASJID BAITURROHMAN",
+                    mosqueName = "MASJID ENDAN ANDANSIH",
                     tagline = "Pusat Ibadah, Pembinaan Umat, & Dakwah Islam",
-                    address = "Desa Ujunggebang, Kecamatan Sukra - Indramayu",
-                    city = "Indramayu, Jawa Barat",
+                    address = "Neglasari, Kec. Darangdan, Kabupaten Purwakarta, Jawa Barat 41163",
+                    city = "Purwakarta, Jawa Barat",
                     phone = "0812-2214-534",
-                    bankName = "Bank BRI (Bank Rakyat Indonesia)",
-                    bankAccount = "4206 0101 2214 534",
-                    bankAccountName = "DKM BAITUR ROHMAN",
-                    latitude = -6.3078,
-                    longitude = 107.9945,
+                    bankName = "Bank Syariah Indonesia (BSI)",
+                    bankAccount = "7123 4567 89",
+                    bankAccountName = "DKM MASJID ENDAN ANDANSIH",
+                    latitude = -6.6961,
+                    longitude = 107.4239,
                     timezone = 7.0,
                     calculationMethod = "KEMENAG",
                     offsetImsak = 0,
@@ -761,7 +761,7 @@ abstract class MasjidDatabase : RoomDatabase() {
                     category = "Tabligh Akbar"
                 ),
                 MosqueActivityEntity(
-                    title = "Tahsin & Tahfidz Al-Qur'an Santri TPQ Baiturrohman",
+                    title = "Tahsin & Tahfidz Al-Qur'an Santri TPQ Masjid Endan Andansih",
                     speaker = "Ustadzah Nurul Hidayah, S.Pd.I",
                     date = "Senin s/d Kamis",
                     time = "16.00 - 17.30 WIB",
@@ -777,7 +777,7 @@ abstract class MasjidDatabase : RoomDatabase() {
             // 5. Initial Running Texts
             val runningTexts = listOf(
                 RunningTextEntity(
-                    text = "Selamat Datang di MASJID BAITURROHMAN Desa Ujunggebang Kecamatan Sukra - Indramayu Jawa Barat. Mohon luruskan dan rapatkan shaf sholat demi kesempurnaan sholat berjamaah.",
+                    text = "Selamat Datang di MASJID ENDAN ANDANSIH, Neglasari, Kec. Darangdan, Kab. Purwakarta. Mohon luruskan dan rapatkan shaf sholat demi kesempurnaan sholat berjamaah.",
                     isActive = true,
                     itemOrder = 1
                 ),
@@ -792,7 +792,7 @@ abstract class MasjidDatabase : RoomDatabase() {
                     itemOrder = 3
                 ),
                 RunningTextEntity(
-                    text = "Infaq & Shadaqah dapat disalurkan melalui Bank BRI No. Rek: 4206 0101 2214 534 a.n DKM BAITUR ROHMAN atau melalui tromol kotak infaq masjid.",
+                    text = "Infaq & Shadaqah dapat disalurkan melalui BSI No. Rek: 7123 4567 89 a.n DKM MASJID ENDAN ANDANSIH atau scan QRIS donasi di layar.",
                     isActive = true,
                     itemOrder = 4
                 )

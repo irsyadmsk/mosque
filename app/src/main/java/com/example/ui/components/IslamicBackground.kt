@@ -51,14 +51,7 @@ fun IslamicBackground(
     )
 
     val customBitmap = remember(customBackgroundImagePath) {
-        if (customBackgroundImagePath.isNotBlank()) {
-            try {
-                val file = File(customBackgroundImagePath)
-                if (file.exists()) BitmapFactory.decodeFile(file.absolutePath)?.asImageBitmap() else null
-            } catch (_: Exception) {
-                null
-            }
-        } else null
+        com.example.util.BitmapUtils.decodeSampledBitmapFromFile(customBackgroundImagePath, 1920, 1080)
     }
 
     val presetDrawableRes = remember(bgPreset) {

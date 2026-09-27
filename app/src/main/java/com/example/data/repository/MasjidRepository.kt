@@ -776,31 +776,32 @@ class MasjidRepository(
         if (currentConfig == null ||
             currentConfig.mosqueName == "Masjid Raya Baitul Muttaqin" ||
             currentConfig.mosqueName == "Masjid Agung Al-Falah" ||
+            currentConfig.mosqueName == "MASJID BAITURROHMAN" ||
             currentConfig.mosqueName.isBlank()) {
             database.mosqueConfigDao().insertOrUpdate(
                 (currentConfig ?: MosqueConfigEntity(id = 1)).copy(
-                    mosqueName = "MASJID BAITURROHMAN",
+                    mosqueName = "MASJID ENDAN ANDANSIH",
                     tagline = "Pusat Ibadah, Pembinaan Umat, & Dakwah Islam",
-                    address = "Desa Ujunggebang, Kecamatan Sukra - Indramayu",
-                    city = "Indramayu, Jawa Barat",
+                    address = "Neglasari, Kec. Darangdan, Kabupaten Purwakarta, Jawa Barat 41163",
+                    city = "Purwakarta, Jawa Barat",
                     phone = "0812-2214-534",
-                    bankName = "Bank BRI (Bank Rakyat Indonesia)",
-                    bankAccount = "4206 0101 2214 534",
-                    bankAccountName = "DKM BAITUR ROHMAN",
-                    latitude = -6.3078,
-                    longitude = 107.9945,
+                    bankName = "Bank Syariah Indonesia (BSI)",
+                    bankAccount = "7123 4567 89",
+                    bankAccountName = "DKM MASJID ENDAN ANDANSIH",
+                    latitude = -6.6961,
+                    longitude = 107.4239,
                     timezone = 7.0,
-                    donationProgramTitle = "Renovasi & Pemakmuran Masjid Baiturrohman"
+                    donationProgramTitle = "Renovasi & Pemakmuran Masjid Endan Andansih"
                 )
             )
         }
 
         val runningTexts = database.runningTextDao().getAllRunningTexts()
-        if (runningTexts.isEmpty() || runningTexts.any { it.text.contains("Al-Falah") || it.text.contains("Baitul Muttaqin") }) {
+        if (runningTexts.isEmpty() || runningTexts.any { it.text.contains("Al-Falah") || it.text.contains("Baitul Muttaqin") || it.text.contains("Baiturrohman") }) {
             database.runningTextDao().deleteAll()
             val newRunningTexts = listOf(
                 RunningTextEntity(
-                    text = "Selamat Datang di MASJID BAITURROHMAN Desa Ujunggebang Kecamatan Sukra - Indramayu Jawa Barat. Mohon luruskan dan rapatkan shaf sholat demi kesempurnaan sholat berjamaah.",
+                    text = "Selamat Datang di MASJID ENDAN ANDANSIH Neglasari Kec. Darangdan, Purwakarta Jawa Barat. Mohon luruskan dan rapatkan shaf sholat demi kesempurnaan sholat berjamaah.",
                     isActive = true,
                     itemOrder = 1
                 ),

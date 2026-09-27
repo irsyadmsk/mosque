@@ -100,6 +100,12 @@ class MasjidTVViewModel(application: Application) : AndroidViewModel(application
     private var lastTriggeredMurottalMinute = -1
     private var lastTriggeredMurottalPrayer: PrayerName? = null
 
+    // Cache prayer calculation to prevent redundant daily astronomical math every second
+    private var cachedPrayerSchedule: PrayerSchedule? = null
+    private var cachedDayOfYear = -1
+    private var cachedYear = -1
+    private var cachedConfig: MosqueConfig? = null
+
     init {
         val ip = NetworkUtils.getLocalIpAddress(application)
         val url = "http://$ip:8080"
@@ -271,20 +277,22 @@ class MasjidTVViewModel(application: Application) : AndroidViewModel(application
                 val timeStr = String.format(java.util.Locale.getDefault(), "%02d:%02d", hour, min)
                 val secStr = String.format(java.util.Locale.getDefault(), "%02d", sec)
 
+                val config = _uiState.value.config
+                val schedule = getOrCalculatePrayerSchedule(cal, config)
+                val nextInfo = PrayerCalculator.getNextPrayerInfo(cal, schedule, config)
+
                 _uiState.update { current ->
                     current.copy(
                         currentCalendar = cal,
                         currentTimeString = timeStr,
                         currentSecondsString = secStr,
-                        isBlinkColon = sec % 2 == 0
+                        isBlinkColon = sec % 2 == 0,
+                        prayerSchedule = schedule,
+                        nextPrayerInfo = nextInfo
                     )
                 }
 
-                updatePrayerCalculation()
-
                 // Check automatic Pre-Adhan Countdown & Adhan arrival
-                val schedule = _uiState.value.prayerSchedule
-                val config = _uiState.value.config
                 val currentMinuteTotal = hour * 60 + min
                 val currentSecsTotal = hour * 3600 + min * 60 + sec
                 val todayDateStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(cal.time)
@@ -420,7 +428,8 @@ class MasjidTVViewModel(application: Application) : AndroidViewModel(application
                     checkAndTriggerWhatsAppReminders(cal, config, todayDateStr)
                 }
 
-                delay(1000)
+                val delayMs = 1000L - (System.currentTimeMillis() % 1000L)
+                delay(delayMs.coerceIn(100L, 1000L))
             }
         }
     }
@@ -544,10 +553,40 @@ class MasjidTVViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    private fun getOrCalculatePrayerSchedule(cal: Calendar, config: MosqueConfig): PrayerSchedule {
+        val currentDay = cal.get(Calendar.DAY_OF_YEAR)
+        val currentYear = cal.get(Calendar.YEAR)
+        val isConfigSame = cachedConfig?.latitude == config.latitude &&
+                cachedConfig?.longitude == config.longitude &&
+                cachedConfig?.timezone == config.timezone &&
+                cachedConfig?.calculationMethod == config.calculationMethod &&
+                cachedConfig?.offsetSubuh == config.offsetSubuh &&
+                cachedConfig?.offsetDzuhur == config.offsetDzuhur &&
+                cachedConfig?.offsetAshar == config.offsetAshar &&
+                cachedConfig?.offsetMaghrib == config.offsetMaghrib &&
+                cachedConfig?.offsetIsya == config.offsetIsya &&
+                cachedConfig?.offsetImsak == config.offsetImsak &&
+                cachedConfig?.offsetTerbit == config.offsetTerbit &&
+                cachedConfig?.offsetDhuha == config.offsetDhuha &&
+                cachedConfig?.hijriAdjustmentDays == config.hijriAdjustmentDays
+
+        val cached = cachedPrayerSchedule
+        if (cached != null && currentDay == cachedDayOfYear && currentYear == cachedYear && isConfigSame) {
+            return cached
+        }
+
+        val newSchedule = PrayerCalculator.calculatePrayerTimes(cal, config)
+        cachedPrayerSchedule = newSchedule
+        cachedDayOfYear = currentDay
+        cachedYear = currentYear
+        cachedConfig = config.copy()
+        return newSchedule
+    }
+
     private fun updatePrayerCalculation() {
         val cal = _uiState.value.currentCalendar
         val config = _uiState.value.config
-        val schedule = PrayerCalculator.calculatePrayerTimes(cal, config)
+        val schedule = getOrCalculatePrayerSchedule(cal, config)
         val nextInfo = PrayerCalculator.getNextPrayerInfo(cal, schedule, config)
 
         _uiState.update {

@@ -43,11 +43,13 @@ fun LocalVideoPlayerView(
     var mediaPlayerRef by remember { mutableStateOf<MediaPlayer?>(null) }
     var surfaceRef by remember { mutableStateOf<Surface?>(null) }
 
-    val shouldLoop = isLooping
-    val muteSetting = isMuted
-    val targetVolume = volume
+    val currentOnCompletion by rememberUpdatedState(onCompletion)
+    val currentOnError by rememberUpdatedState(onError)
+    val currentIsLooping by rememberUpdatedState(isLooping)
+    val currentIsMuted by rememberUpdatedState(isMuted)
+    val currentVolume by rememberUpdatedState(volume)
 
-    DisposableEffect(videoPath, isMuted, isLooping, volume) {
+    DisposableEffect(videoPath) {
         onDispose {
             try {
                 mediaPlayerRef?.let { mp ->
@@ -83,8 +85,8 @@ fun LocalVideoPlayerView(
                                 val mp = MediaPlayer().apply {
                                     setDataSource(ctx, Uri.fromFile(videoFile))
                                     setSurface(surface)
-                                    this.isLooping = shouldLoop
-                                    val actualVol = if (muteSetting) 0f else targetVolume.coerceIn(0f, 1f)
+                                    this.isLooping = currentIsLooping
+                                    val actualVol = if (currentIsMuted) 0f else currentVolume.coerceIn(0f, 1f)
                                     setVolume(actualVol, actualVol)
                                     setOnPreparedListener { player ->
                                         val videoWidth = player.videoWidth.toFloat()
@@ -105,19 +107,19 @@ fun LocalVideoPlayerView(
                                         player.start()
                                     }
                                     setOnCompletionListener {
-                                        if (!shouldLoop) {
-                                            onCompletion()
+                                        if (!currentIsLooping) {
+                                            currentOnCompletion()
                                         }
                                     }
                                     setOnErrorListener { _, _, _ ->
-                                        onError()
+                                        currentOnError()
                                         true
                                     }
                                     prepareAsync()
                                 }
                                 mediaPlayerRef = mp
                             } catch (e: Exception) {
-                                onError()
+                                currentOnError()
                             }
                         }
 
@@ -144,8 +146,9 @@ fun LocalVideoPlayerView(
             update = { _ ->
                 mediaPlayerRef?.let { mp ->
                     try {
-                        val actualVol = if (muteSetting) 0f else targetVolume.coerceIn(0f, 1f)
+                        val actualVol = if (isMuted) 0f else volume.coerceIn(0f, 1f)
                         mp.setVolume(actualVol, actualVol)
+                        mp.isLooping = isLooping
                     } catch (_: Exception) {}
                 }
             }

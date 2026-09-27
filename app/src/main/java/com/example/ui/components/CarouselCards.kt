@@ -197,12 +197,7 @@ fun CarouselContainer(
 @Composable
 private fun SlideMediaImage(slide: MediaSlide) {
     val bitmap = remember(slide.filePath) {
-        try {
-            val file = File(slide.filePath)
-            if (file.exists()) BitmapFactory.decodeFile(file.absolutePath)?.asImageBitmap() else null
-        } catch (_: Exception) {
-            null
-        }
+        com.example.util.BitmapUtils.decodeSampledBitmapFromFile(slide.filePath, 1920, 1080)
     }
 
     Box(
@@ -254,12 +249,7 @@ private fun SlideCanvasBackground(
     contentDescription: String = "Canvas"
 ) {
     val customBitmap = remember(customPath) {
-        if (customPath.isNotBlank()) {
-            try {
-                val f = File(customPath)
-                if (f.exists()) BitmapFactory.decodeFile(f.absolutePath)?.asImageBitmap() else null
-            } catch (_: Exception) { null }
-        } else null
+        com.example.util.BitmapUtils.decodeSampledBitmapFromFile(customPath, 1920, 1080)
     }
 
     val resId = remember(defaultPreset) {
@@ -2142,14 +2132,7 @@ private fun formatRupiahCarousel(amount: Long): String {
 @Composable
 private fun SlideQrisDonation(config: MosqueConfig) {
     val qrisBitmap = remember(config.qrisImagePath) {
-        if (config.qrisImagePath.isNotBlank()) {
-            try {
-                val f = File(config.qrisImagePath)
-                if (f.exists()) BitmapFactory.decodeFile(f.absolutePath)?.asImageBitmap() else null
-            } catch (_: Exception) {
-                null
-            }
-        } else null
+        com.example.util.BitmapUtils.decodeSampledBitmapFromFile(config.qrisImagePath, 1080, 1080)
     }
 
     val collected = config.donationCollectedAmount
