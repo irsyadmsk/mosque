@@ -12,7 +12,7 @@ Repo source `irsyadmsk/mosque` tetap privat. Repo `irsyadmsk/masjidku-downloads`
 
 ## Status domain — 2 Oktober 2026
 
-Konfigurasi DNS dan custom domain telah tersimpan; deploy web berhasil. Pemeriksaan terakhir masih menerima NXDOMAIN dan GitHub belum menerbitkan sertifikat domain, sehingga HTTPS enforcement belum dapat diaktifkan. Ini belum merupakan bukti domain dapat dibuka publik. Setelah DNS terbaca, periksa sertifikat dan aktifkan Enforce HTTPS di GitHub Pages. Tidak perlu mengubah nama aplikasi, repo, atau membangun ulang APK.
+Domain sudah aktif dan diverifikasi pada 2 Oktober 2026. DNS CNAME terbaca; sertifikat GitHub Pages disetujui untuk `mosque.irsyads.com` (berlaku sampai 31 Desember 2026); Enforce HTTPS aktif. Halaman dan CSS merespons HTTP 200 melalui HTTPS dengan validasi sertifikat; HTTP dialihkan 301 ke HTTPS. Tampilan diperiksa di browser dan unduhan APK diverifikasi terhadap SHA-256 rilis. Nama aplikasi/repo tidak berubah dan APK tidak perlu dibangun ulang untuk perubahan domain ini.
 
 ## Rilis 1.0.7-beta.1
 
