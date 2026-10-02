@@ -30,7 +30,7 @@ APK ini menggunakan build debug. Belum diuji pada TV/STB nyata dan belum merupak
 
 Streaming, layanan WhatsApp, peta daring, dan unduhan audio membutuhkan koneksi sesuai layanan. Jadwal dan data lokal tidak memerlukan akun cloud.
 
-Domain yang direncanakan adalah `masjid.irsyads.com`; alamat sementara menggunakan GitHub Pages. Source pengembangan disimpan pada repo privat terpisah.
+Domain yang direncanakan adalah `mosque.irsyads.com`; alamat sementara menggunakan GitHub Pages. Source pengembangan disimpan pada repo privat terpisah.
 
 ## Fitur beta
 

@@ -28,7 +28,7 @@ Kotlin / Jetpack Compose, Room, Media3, embedded HTTP server port 8080. Panel sa
 
 Nama MasjidKU TV. Bahasa Indonesia. Identitas dan konten masjid dapat disesuaikan admin. Pengguna meminta wallpaper kembali terlihat, animasi relevan, antarmuka bersih dan mudah digunakan.
 
-Identitas ekosistem: MasjidKU by Irsyads. Alamat publik yang dipilih untuk persiapan produk adalah `masjid.irsyads.com`; `mosque.irsyads.com` dapat menjadi alias. DNS dan situs publik belum diterbitkan. Situs informasi/demo/unduhan tidak memerlukan login; TV tetap offline dan pengaturan memakai PIN lokal pengurus.
+Identitas ekosistem: MasjidKU by Irsyads. Alamat publik yang dipilih untuk persiapan produk adalah `mosque.irsyads.com`. DNS dan situs publik belum diterbitkan. Situs informasi/demo/unduhan tidak memerlukan login; TV tetap offline dan pengaturan memakai PIN lokal pengurus.
 
 Alur ibadah: informasi → adzan → iqomah → fokus salat. Pada Jumat, tahap fokus khutbah berada setelah adzan dan sebelum iqomah. Khutbah dapat berakhir melalui kontrol pengurus atau timer. Mode fokus memakai permukaan statis, menghentikan konten utama dan audio murottal, serta menyediakan pilihan pesan/jam kecil atau layar gelap.
 

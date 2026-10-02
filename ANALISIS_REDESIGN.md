@@ -88,7 +88,7 @@ Tahap `KHUTBAH_FOCUS` menyediakan akhir manual atau otomatis. Khutbah/salat mema
 
 Validasi akhir: build APK debug berhasil; 16 test lulus tanpa failure/error. Aturan alur dan timer memakai waktu virtual, API HTTP Android diuji dengan Room/Robolectric, dan migrasi diuji terhadap skema lengkap serta konfigurasi lama. Pemeriksaan Playwright form embedded memakai HTML hasil server Android dan fixture status: pemuatan konfigurasi, koordinat nol, zona waktu tersimpan, payload simpan dan tombol khutbah lulus. Pratinjau lima mode, pilihan gelap/jam serta ukuran 390/768/1440 px juga lulus tanpa JavaScript exception. Bukti lokal ini belum merupakan pengujian pada TV/STB nyata.
 
-Panduan pengurus dan batas rilis: `docs/MASJIDKU_IBADAH.md`. Arah domain disiapkan sebagai `masjid.irsyads.com`; DNS dan situs publik belum diterbitkan. Redesign keseluruhan berikut tetap menunggu pilihan visual.
+Panduan pengurus dan batas rilis: `docs/MASJIDKU_IBADAH.md`. Arah domain disiapkan sebagai `mosque.irsyads.com`; DNS dan situs publik belum diterbitkan. Redesign keseluruhan berikut tetap menunggu pilihan visual.
 
 1. Tetapkan token bersama TV/admin dan kontrak gerak; jaga wallpaper serta kontras teks pada tiap preset.
 2. Terapkan keseluruhan layar Compose: header, jam, carousel, kas/petugas/kajian, jadwal, ticker, pengaturan dan semua overlay salat. Animasi native Compose mengikuti skala animasi sistem.

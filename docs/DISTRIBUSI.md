@@ -8,7 +8,7 @@ Credit by Muhammad Irsyad Sirojul Khoeir (irsyads.com)
 - **Web admin lokal:** tertanam dalam APK; buka `http://IP-TV:8080` dari HP di jaringan yang sama, lalu masuk menggunakan PIN pengurus.
 - **Web publik:** informasi produk, panduan pemasangan, kredit dan tautan APK di GitHub Releases. Tidak meminta PIN atau menyimpan data masjid.
 
-Repo source `irsyadmsk/mosque` tetap privat. Repo `irsyadmsk/masjidku-downloads` menyimpan halaman web, panduan, dan rilis APK yang dapat diakses umum. GitHub Pages digunakan untuk web publik. `masjid.irsyads.com` menjadi rencana domain produk, dan baru digunakan setelah DNS terhubung.
+Repo source `irsyadmsk/mosque` tetap privat. Repo `irsyadmsk/masjidku-downloads` menyimpan halaman web, panduan, dan rilis APK yang dapat diakses umum. GitHub Pages digunakan untuk web publik. `mosque.irsyads.com` menjadi rencana domain produk, dan baru digunakan setelah DNS terhubung.
 
 ## Rilis 1.0.7-beta.1
 
