@@ -1,0 +1,12 @@
+<svg width="32" height="32" viewBox="110 95 580 580" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Logo Irsyads">
+  <path fill="#D9A441" d="M400 100C487.5 187.5 512.5 312.5 469 475L331 475C287.5 312.5 312.5 187.5 400 100Z"></path>
+  <path fill="var(--color-ink, #1B2230)" d="M331 475L469 475L469 600C469 640 437.5 669 400 669C362.5 669 331 640 331 600Z"></path>
+  <path
+    fill="#D9A441"
+    stroke="var(--color-bg, #FFFFFF)"
+    stroke-width="3"
+    d="M403 490C435 520 452 550 448 585C445 615 425 638 400 648C380 640 366 618 364 590C361 555 375 518 403 490Z"
+  ></path>
+  <circle cx="420" cy="540" r="9" fill="#1B2230"></circle>
+  <circle cx="415" cy="580" r="9" fill="#1B2230"></circle>
+</svg>
