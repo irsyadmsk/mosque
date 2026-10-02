@@ -8,7 +8,11 @@ Credit by Muhammad Irsyad Sirojul Khoeir (irsyads.com)
 - **Web admin lokal:** tertanam dalam APK; buka `http://IP-TV:8080` dari HP di jaringan yang sama, lalu masuk menggunakan PIN pengurus.
 - **Web publik:** informasi produk, panduan pemasangan, kredit dan tautan APK di GitHub Releases. Tidak meminta PIN atau menyimpan data masjid.
 
-Repo source `irsyadmsk/mosque` tetap privat. Repo `irsyadmsk/masjidku-downloads` menyimpan halaman web, panduan, dan rilis APK yang dapat diakses umum. GitHub Pages digunakan untuk web publik. `mosque.irsyads.com` menjadi rencana domain produk, dan baru digunakan setelah DNS terhubung.
+Repo source `irsyadmsk/mosque` tetap privat. Repo `irsyadmsk/masjidku-downloads` menyimpan halaman web, panduan, dan rilis APK yang dapat diakses umum. GitHub Pages digunakan untuk web publik. Alamat publik: `https://mosque.irsyads.com/`. Custom domain GitHub Pages dan CNAME Cloudflare (`mosque` menuju `irsyadmsk.github.io`, DNS only, TTL Auto) dikonfigurasi pada 2 Oktober 2026.
+
+## Status domain — 2 Oktober 2026
+
+Konfigurasi DNS dan custom domain telah tersimpan; deploy web berhasil. Pemeriksaan terakhir masih menerima NXDOMAIN dan GitHub belum menerbitkan sertifikat domain, sehingga HTTPS enforcement belum dapat diaktifkan. Ini belum merupakan bukti domain dapat dibuka publik. Setelah DNS terbaca, periksa sertifikat dan aktifkan Enforce HTTPS di GitHub Pages. Tidak perlu mengubah nama aplikasi, repo, atau membangun ulang APK.
 
 ## Rilis 1.0.7-beta.1
 

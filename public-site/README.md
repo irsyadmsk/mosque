@@ -6,7 +6,7 @@ Layar informasi masjid untuk Android TV/STB, dengan jadwal salat offline dan pen
 
 ## Unduh aplikasi
 
-[Buka GitHub Releases](https://github.com/irsyadmsk/masjidku-downloads/releases) · [Web MasjidKU](https://irsyadmsk.github.io/masjidku-downloads/)
+[Buka GitHub Releases](https://github.com/irsyadmsk/masjidku-downloads/releases) · [Web MasjidKU](https://mosque.irsyads.com/)
 
 Versi terbaru: **1.0.7-beta.1 — versi pengujian**.
 
@@ -30,7 +30,7 @@ APK ini menggunakan build debug. Belum diuji pada TV/STB nyata dan belum merupak
 
 Streaming, layanan WhatsApp, peta daring, dan unduhan audio membutuhkan koneksi sesuai layanan. Jadwal dan data lokal tidak memerlukan akun cloud.
 
-Domain yang direncanakan adalah `mosque.irsyads.com`; alamat sementara menggunakan GitHub Pages. Source pengembangan disimpan pada repo privat terpisah.
+Domain publik adalah `mosque.irsyads.com`, menggunakan GitHub Pages dengan CNAME DNS menuju `irsyadmsk.github.io`. Source pengembangan disimpan pada repo privat terpisah.
 
 ## Fitur beta
 

@@ -1,6 +1,6 @@
 # Lokasi, admin lokal, dan mode ibadah
 
-Implementasi Android dan admin lokal, 2 Oktober 2026. Aplikasi TV tidak membutuhkan akun internet. Halaman publik direncanakan di `mosque.irsyads.com` dengan identitas MasjidKU by Irsyads; DNS, hosting, dan situs publik belum diterbitkan.
+Implementasi Android dan admin lokal, 2 Oktober 2026. Aplikasi TV tidak membutuhkan akun internet. Halaman informasi dan unduhan publik menggunakan `https://mosque.irsyads.com/` dengan identitas MasjidKU by Irsyads. Hosting GitHub Pages dan CNAME Cloudflare sudah dikonfigurasi.
 
 ## Pengaturan awal
 
