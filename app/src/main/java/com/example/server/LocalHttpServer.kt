@@ -38,7 +38,7 @@ class LocalHttpServer(
 ) {
     private var serverSocket: ServerSocket? = null
     private var isRunning = false
-    private val activeTokens = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+    private val activeTokens = com.example.util.LocalAdminSessions()
 
     fun start() {
         if (isRunning) return
@@ -70,23 +70,10 @@ class LocalHttpServer(
         } catch (_: Exception) {}
     }
 
-    private fun getStaticToken(password: String): String {
-        return try {
-            val md = java.security.MessageDigest.getInstance("MD5")
-            val digest = md.digest("masjidku_secret_$password".toByteArray(StandardCharsets.UTF_8))
-            digest.joinToString("") { "%02x".format(it) }
-        } catch (_: Exception) {
-            "masjidku_token_$password"
-        }
-    }
-
     private suspend fun isAuthorized(headers: Map<String, String>, pathWithQuery: String, body: String): Boolean {
-        val config = repository.configFlow.first()
-        val staticToken = getStaticToken(config.webAdminPassword)
-
         fun check(token: String): Boolean {
             if (token.isBlank()) return false
-            return token == staticToken || activeTokens.contains(token)
+            return activeTokens.contains(token)
         }
 
         val authHeader = headers["authorization"] ?: ""
@@ -133,10 +120,10 @@ class LocalHttpServer(
         val config = repository.configFlow.first()
         val json = JSONObject()
         if (inputPassword.isNotEmpty() && inputPassword == config.webAdminPassword) {
-            val token = getStaticToken(config.webAdminPassword)
-            activeTokens.add(token)
+            val token = activeTokens.issue()
             json.put("status", "ok")
             json.put("token", token)
+            json.put("requiresPinChange", config.webAdminPassword == "123456")
             json.put("message", "Login berhasil! Selamat datang pengurus masjid.")
         } else {
             json.put("status", "error")
@@ -158,9 +145,13 @@ class LocalHttpServer(
                 json.put("status", "error")
                 json.put("message", "PIN / Password lama tidak sesuai!")
             }
-            newPass.length < 4 -> {
+            newPass == "123456" -> {
                 json.put("status", "error")
-                json.put("message", "PIN / Password baru minimal 4 karakter / angka!")
+                json.put("message", "Gunakan PIN pribadi, bukan PIN bawaan 123456.")
+            }
+            newPass.length < 6 -> {
+                json.put("status", "error")
+                json.put("message", "PIN / Password baru minimal 6 karakter / angka!")
             }
             newPass != confirmPass -> {
                 json.put("status", "error")
@@ -169,6 +160,7 @@ class LocalHttpServer(
             else -> {
                 val updated = config.copy(webAdminPassword = newPass)
                 repository.saveConfig(updated)
+                activeTokens.clear()
                 json.put("status", "ok")
                 json.put("message", "PIN / Password berhasil diubah! Gunakan PIN baru ini untuk login berikutnya.")
             }
@@ -242,6 +234,12 @@ class LocalHttpServer(
                         contentLength = hVal.toIntOrNull() ?: 0
                     }
                 }
+            }
+
+            // Initial setup credentials may only be used to establish a private administrator PIN.
+            if (path.startsWith("/api/") && path !in setOf("/api/login", "/api/logout", "/api/check-session", "/api/status", "/api/change-password") && repository.configFlow.first().webAdminPassword == "123456") {
+                sendResponse(output, "403 Forbidden", "application/json", "{\"status\":\"error\",\"message\":\"Tetapkan PIN pribadi melalui Profil sebelum mengubah pengaturan.\"}".toByteArray())
+                return
             }
 
             // Extend socket timeout for file uploads (10 minutes)
@@ -371,8 +369,13 @@ class LocalHttpServer(
                     if (!isAuthorized(headers, pathWithQuery, body)) {
                         sendUnauthorized(output)
                     } else {
-                        handleSaveConfig(body)
-                        sendResponse(output, "200 OK", "application/json", "{\"status\":\"ok\",\"message\":\"Pengaturan berhasil disimpan!\"}".toByteArray())
+                        try {
+                            handleSaveConfig(body)
+                            sendResponse(output, "200 OK", "application/json", "{\"status\":\"ok\",\"message\":\"Pengaturan berhasil disimpan!\"}".toByteArray())
+                        } catch (e: IllegalArgumentException) {
+                            val error = JSONObject().put("status", "error").put("message", e.message ?: "Pengaturan tidak valid")
+                            sendResponse(output, "400 Bad Request", "application/json", error.toString().toByteArray())
+                        }
                     }
                 }
                 path == "/api/add-finance" && method == "POST" -> {
@@ -1479,6 +1482,12 @@ class LocalHttpServer(
             }
         }
 
+        require(com.example.util.PrayerFlowPolicy.validLocation(lat ?: current.latitude, lng ?: current.longitude, tz ?: current.timezone)) {
+            "Koordinat atau zona waktu tidak valid"
+        }
+        for (key in listOf("latitude", "longitude", "timezone")) {
+            require(params[key] == null || params[key]?.toDoubleOrNull() != null) { "Nilai lokasi harus berupa angka" }
+        }
         val updated = current.copy(
             mosqueName = params["mosqueName"] ?: current.mosqueName,
             tagline = params["tagline"] ?: current.tagline,
@@ -1500,13 +1509,20 @@ class LocalHttpServer(
             offsetAshar = params["offsetAshar"]?.toIntOrNull() ?: current.offsetAshar,
             offsetMaghrib = params["offsetMaghrib"]?.toIntOrNull() ?: current.offsetMaghrib,
             offsetIsya = params["offsetIsya"]?.toIntOrNull() ?: current.offsetIsya,
-            iqomahSubuh = params["iqomahSubuh"]?.toIntOrNull() ?: current.iqomahSubuh,
-            iqomahDzuhur = params["iqomahDzuhur"]?.toIntOrNull() ?: current.iqomahDzuhur,
-            iqomahJumat = params["iqomahJumat"]?.toIntOrNull() ?: current.iqomahJumat,
-            iqomahAshar = params["iqomahAshar"]?.toIntOrNull() ?: current.iqomahAshar,
-            iqomahMaghrib = params["iqomahMaghrib"]?.toIntOrNull() ?: current.iqomahMaghrib,
-            iqomahIsya = params["iqomahIsya"]?.toIntOrNull() ?: current.iqomahIsya,
-            sholatDurationMinutes = params["sholatDurationMinutes"]?.toIntOrNull() ?: current.sholatDurationMinutes,
+            iqomahSubuh = params["iqomahSubuh"]?.toIntOrNull()?.coerceIn(0, 120) ?: current.iqomahSubuh,
+            iqomahDzuhur = params["iqomahDzuhur"]?.toIntOrNull()?.coerceIn(0, 120) ?: current.iqomahDzuhur,
+            iqomahJumat = params["iqomahJumat"]?.toIntOrNull()?.coerceIn(0, 120) ?: current.iqomahJumat,
+            iqomahAshar = params["iqomahAshar"]?.toIntOrNull()?.coerceIn(0, 120) ?: current.iqomahAshar,
+            iqomahMaghrib = params["iqomahMaghrib"]?.toIntOrNull()?.coerceIn(0, 120) ?: current.iqomahMaghrib,
+            iqomahIsya = params["iqomahIsya"]?.toIntOrNull()?.coerceIn(0, 120) ?: current.iqomahIsya,
+            adhanDurationSeconds = params["adhanDurationSeconds"]?.toIntOrNull()?.coerceIn(10, 900) ?: current.adhanDurationSeconds,
+            fridayKhutbahEnabled = params["fridayKhutbahEnabled"]?.toBooleanStrictOrNull() ?: current.fridayKhutbahEnabled,
+            fridayKhutbahManual = params["fridayKhutbahManual"]?.toBooleanStrictOrNull() ?: current.fridayKhutbahManual,
+            fridayKhutbahMinutes = params["fridayKhutbahMinutes"]?.toIntOrNull()?.coerceIn(1, 120) ?: current.fridayKhutbahMinutes,
+            focusBlankScreen = params["focusBlankScreen"]?.toBooleanStrictOrNull() ?: current.focusBlankScreen,
+            focusShowClock = params["focusShowClock"]?.toBooleanStrictOrNull() ?: current.focusShowClock,
+            screenCustomizationJson = params["screenCustomizationJson"]?.let { com.example.util.ScreenCustomization.normalize(it) } ?: current.screenCustomizationJson,
+            sholatDurationMinutes = params["sholatDurationMinutes"]?.toIntOrNull()?.coerceIn(3, 120) ?: current.sholatDurationMinutes,
             hijriAdjustmentDays = params["hijriAdjustmentDays"]?.toIntOrNull() ?: current.hijriAdjustmentDays,
             activeTheme = params["activeTheme"] ?: current.activeTheme,
             displayLayoutModel = params["displayLayoutModel"] ?: current.displayLayoutModel,
@@ -1527,8 +1543,8 @@ class LocalHttpServer(
             customBackgroundImagePath = params["customBackgroundImagePath"] ?: current.customBackgroundImagePath,
             customBackgroundDim = params["customBackgroundDim"]?.toFloatOrNull() ?: current.customBackgroundDim,
             mainScreenBgPreset = params["mainScreenBgPreset"] ?: current.mainScreenBgPreset,
-            backgroundType = if (params.containsKey("mainScreenBgPreset")) "PRESET" else (params["backgroundType"] ?: current.backgroundType),
-            backgroundVideoPath = if (params.containsKey("mainScreenBgPreset")) "" else (params["backgroundVideoPath"] ?: current.backgroundVideoPath),
+            backgroundType = com.example.util.BackgroundSelectionPolicy.resolveType(current.backgroundType, current.mainScreenBgPreset, params),
+            backgroundVideoPath = params["backgroundVideoPath"] ?: current.backgroundVideoPath,
             backgroundCctvCameraId = params["backgroundCctvCameraId"] ?: current.backgroundCctvCameraId,
             financeBgPreset = params["financeBgPreset"] ?: current.financeBgPreset,
             fridayOfficerBgPreset = params["fridayOfficerBgPreset"] ?: current.fridayOfficerBgPreset,
@@ -1544,7 +1560,7 @@ class LocalHttpServer(
             donationCollectedAmount = params["donationCollectedAmount"]?.toLongOrNull() ?: current.donationCollectedAmount,
             showQrisCard = parseBool(params["showQrisCard"], current.showQrisCard),
             showDailyHadith = parseBool(params["showDailyHadith"], current.showDailyHadith),
-            webAdminPassword = params["webAdminPassword"]?.takeIf { it.isNotBlank() } ?: current.webAdminPassword,
+            webAdminPassword = current.webAdminPassword, // PIN changes only through the dedicated verified endpoint.
             enablePreAdhanCountdown = parseBool(params["enablePreAdhanCountdown"], current.enablePreAdhanCountdown),
             preAdhanCountdownSeconds = params["preAdhanCountdownSeconds"]?.toIntOrNull() ?: current.preAdhanCountdownSeconds,
             imamSubuh = params["imamSubuh"] ?: current.imamSubuh,
@@ -2260,6 +2276,7 @@ class LocalHttpServer(
             put("bankName", config.bankName)
             put("bankAccount", config.bankAccount)
             put("bankAccountName", config.bankAccountName)
+            put("requiresPinChange", config.webAdminPassword == "123456")
             put("latitude", config.latitude)
             put("longitude", config.longitude)
             put("timezone", config.timezone)
@@ -2289,6 +2306,13 @@ class LocalHttpServer(
             put("iqomahAshar", config.iqomahAshar)
             put("iqomahMaghrib", config.iqomahMaghrib)
             put("iqomahIsya", config.iqomahIsya)
+            put("adhanDurationSeconds", config.adhanDurationSeconds)
+            put("fridayKhutbahEnabled", config.fridayKhutbahEnabled)
+            put("fridayKhutbahManual", config.fridayKhutbahManual)
+            put("fridayKhutbahMinutes", config.fridayKhutbahMinutes)
+            put("focusBlankScreen", config.focusBlankScreen)
+            put("focusShowClock", config.focusShowClock)
+            put("screenCustomizationJson", config.screenCustomizationJson)
             put("sholatDurationMinutes", config.sholatDurationMinutes)
             put("hijriAdjustmentDays", config.hijriAdjustmentDays)
             put("activeTheme", config.activeTheme)
@@ -2652,81 +2676,173 @@ class LocalHttpServer(
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pengaturan Layar TV MasjidKU</title>
+    <title>Pengaturan Layar TV MasjidKU - MASJID ENDAN ANDANSIH</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <style>
         :root {
-            --primary: #0D5C3A;
-            --primary-dark: #073B24;
+            --primary: #064E3B;
+            --primary-dark: #022C22;
+            --primary-light: #065F46;
             --gold: #D4AF37;
-            --gold-light: #F3E5AB;
-            --bg: #F4F7F5;
+            --gold-vibrant: #F59E0B;
+            --gold-light: #FDE68A;
+            --emerald: #10B981;
+            --bg: #F0F4F2;
             --card-bg: #FFFFFF;
-            --text-dark: #1A2E26;
-            --text-muted: #5A7569;
+            --text-dark: #0F172A;
+            --text-muted: #475569;
             --danger: #DC2626;
             --success: #16A34A;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
-        body { background: var(--bg); color: var(--text-dark); padding-bottom: 60px; }
-        header { background: linear-gradient(135deg, var(--primary-dark), var(--primary)); color: #fff; padding: 18px 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        body { background: var(--bg); color: var(--text-dark); padding-bottom: 70px; -webkit-font-smoothing: antialiased; }
+        header { background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 65%, var(--primary-light) 100%); color: #fff; padding: 18px 20px; box-shadow: 0 4px 18px rgba(2,44,34,0.25); border-bottom: 2px solid var(--gold); }
         .header-content { max-width: 900px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
-        .brand-title { font-size: 20px; font-weight: 800; color: var(--gold-light); display: flex; align-items: center; gap: 8px; }
-        .brand-subtitle { font-size: 12px; color: rgba(255,255,255,0.8); }
-        .live-badge { background: rgba(22,163,74,0.3); border: 1px solid #4ADE80; color: #4ADE80; font-size: 11px; padding: 3px 8px; border-radius: 12px; font-weight: bold; }
+        .brand-title { font-size: 20px; font-weight: 800; color: var(--gold-light); display: flex; align-items: center; gap: 8px; letter-spacing: 0.5px; }
+        .brand-subtitle { font-size: 12px; color: rgba(255,255,255,0.85); font-weight: 500; }
+        .live-badge { background: rgba(16,185,129,0.25); border: 1px solid #34D399; color: #6EE7B7; font-size: 11px; padding: 4px 9px; border-radius: 12px; font-weight: 800; display: inline-flex; align-items: center; gap: 4px; }
         
-        .nav-tabs { background: #fff; max-width: 900px; margin: 12px auto 0; padding: 4px; display: flex; overflow-x: auto; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); gap: 4px; }
-        .tab-btn { background: none; border: none; padding: 10px 14px; font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer; border-radius: 8px; white-space: nowrap; flex: 1; text-align: center; }
-        .tab-btn.active { background: var(--primary); color: #fff; }
+        .nav-tabs { position: sticky; top: 0; z-index: 800; background: rgba(255,255,255,0.96); backdrop-filter: blur(10px); max-width: 900px; margin: 0 auto; padding: 6px; display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; border-radius: 0 0 14px 14px; box-shadow: 0 4px 14px rgba(0,0,0,0.06); gap: 5px; }
+        .nav-tabs::-webkit-scrollbar { display: none; }
+        .tab-btn { background: none; border: none; padding: 10px 14px; font-size: 13px; font-weight: 700; color: var(--text-muted); cursor: pointer; border-radius: 10px; white-space: nowrap; flex: 1; text-align: center; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+        .tab-btn:hover { background: rgba(6,78,59,0.08); color: var(--primary); }
+        .tab-btn.active { background: linear-gradient(135deg, var(--primary-dark), var(--primary)); color: var(--gold-light); box-shadow: 0 4px 12px rgba(6,78,59,0.28); border-bottom: 2px solid var(--gold); }
         
+        /* Quick Remote TV Action Bar (1-Klik Kontrol TV Langsung) */
+        .quick-remote-wrapper { max-width: 900px; margin: 14px auto 0; padding: 0 14px; }
+        .quick-remote-card {
+            background: linear-gradient(135deg, #022C22 0%, #064E3B 65%, #065F46 100%);
+            border-radius: 14px;
+            padding: 14px 16px;
+            border: 1.5px solid var(--gold);
+            box-shadow: 0 6px 20px rgba(2,44,34,0.28);
+            color: #fff;
+        }
+        .quick-remote-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .quick-remote-title {
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--gold-light);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            letter-spacing: 0.5px;
+        }
+        .live-pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10B981;
+            box-shadow: 0 0 10px #10B981;
+            animation: pulseDot 1.6s infinite ease-in-out;
+            display: inline-block;
+        }
+        @keyframes pulseDot {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.4); opacity: 0.6; }
+        }
+        .quick-remote-subtitle {
+            font-size: 11px;
+            color: rgba(255,255,255,0.78);
+        }
+        .quick-remote-buttons {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+        }
+        @media (max-width: 768px) {
+            .quick-remote-buttons { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 440px) {
+            .quick-remote-buttons { grid-template-columns: repeat(2, 1fr); }
+        }
+        .btn-qr {
+            min-height: 42px;
+            border: none;
+            border-radius: 8px;
+            font-size: 12.5px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            padding: 8px 10px;
+            transition: all 0.18s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+            color: #fff;
+        }
+        .btn-qr:hover { transform: translateY(-1px); filter: brightness(1.1); }
+        .btn-qr:active { transform: scale(0.96); }
+        .btn-qr-reset { background: linear-gradient(135deg, #0284C7, #0369A1); border: 1px solid #38BDF8; }
+        .btn-qr-preadhan { background: linear-gradient(135deg, #D97706, #B45309); border: 1px solid #FCD34D; }
+        .btn-qr-adhan { background: linear-gradient(135deg, #059669, #047857); border: 1px solid #6EE7B7; }
+        .btn-qr-iqomah { background: linear-gradient(135deg, #7C3AED, #6D28D9); border: 1px solid #C4B5FD; }
+        .btn-qr-sholat { background: linear-gradient(135deg, #334155, #1E293B); border: 1px solid #94A3B8; }
+        .btn-qr-sound { background: linear-gradient(135deg, #B45309, #92400E); border: 1px solid #FBBF24; }
+
         .container { max-width: 900px; margin: 16px auto; padding: 0 14px; }
         .section-tab { display: none; }
         .section-tab.active { display: block; }
         
-        .card { background: var(--card-bg); border-radius: 12px; padding: 18px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.06); }
-        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #edf2ef; }
-        .card-header h2 { font-size: 16px; color: var(--primary-dark); font-weight: 700; }
+        .card { background: var(--card-bg); border-radius: 14px; padding: 20px; margin-bottom: 18px; box-shadow: 0 4px 16px rgba(2,44,34,0.06); border: 1px solid rgba(6,78,59,0.12); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1.5px solid #edf2ef; }
+        .card-header h2 { font-size: 16.5px; color: var(--primary-dark); font-weight: 800; display: flex; align-items: center; gap: 8px; }
         
-        .form-group { margin-bottom: 14px; }
-        .form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--text-dark); margin-bottom: 6px; }
-        .form-control { width: 100%; padding: 10px 12px; font-size: 14px; border: 1px solid #cfdcd5; border-radius: 8px; background: #fafcfb; color: #111; }
-        .form-control:focus { outline: none; border-color: var(--primary); background: #fff; box-shadow: 0 0 0 2px rgba(13,92,58,0.2); }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 12.5px; font-weight: 700; color: var(--text-dark); margin-bottom: 6px; }
+        .form-control { width: 100%; min-height: 44px; padding: 11px 14px; font-size: 14px; font-weight: 500; border: 1.5px solid #CBD5E1; border-radius: 10px; background: #fafcfb; color: #111; box-sizing: border-box; transition: all 0.2s; }
+        .form-control:focus { outline: none; border-color: #059669; background: #fff; box-shadow: 0 0 0 3px rgba(16,185,129,0.2); }
         
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
         @media (max-width: 600px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
         
-        .btn-primary { background: var(--primary); color: #fff; border: none; padding: 10px 18px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; transition: all 0.2s; }
-        .btn-primary:hover { background: var(--primary-dark); }
-        .btn-gold { background: linear-gradient(135deg, #B89726, var(--gold)); color: #111; border: none; padding: 10px 18px; font-size: 13px; font-weight: 700; border-radius: 8px; cursor: pointer; width: 100%; }
-        .btn-danger { background: #FEE2E2; color: var(--danger); border: 1px solid #FCA5A5; padding: 6px 12px; font-size: 12px; font-weight: 600; border-radius: 6px; cursor: pointer; }
+        .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: #fff; border: none; min-height: 44px; padding: 11px 18px; font-size: 13.5px; font-weight: 700; border-radius: 10px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; transition: all 0.2s; box-shadow: 0 4px 12px rgba(6,78,59,0.2); }
+        .btn-primary:hover { background: linear-gradient(135deg, var(--primary-dark), #047857); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(6,78,59,0.28); }
+        .btn-primary:active, .btn-gold:active { transform: scale(0.98); }
+        .btn-gold { background: linear-gradient(135deg, var(--gold) 0%, var(--gold-vibrant) 100%); color: var(--primary-dark); border: 1px solid #B45309; min-height: 44px; padding: 11px 18px; font-size: 13.5px; font-weight: 800; border-radius: 10px; cursor: pointer; width: 100%; transition: all 0.2s; box-shadow: 0 4px 12px rgba(212,175,55,0.25); display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+        .btn-gold:hover { filter: brightness(1.08); transform: translateY(-1px); }
+        .btn-danger { background: #FEE2E2; color: var(--danger); border: 1.5px solid #FCA5A5; min-height: 38px; padding: 8px 14px; font-size: 12.5px; font-weight: 700; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
         .btn-danger:hover { background: var(--danger); color: #fff; }
-        .btn-secondary { background: #E5E7EB; color: #374151; border: none; padding: 6px 12px; font-size: 12px; font-weight: 600; border-radius: 6px; cursor: pointer; }
+        .btn-secondary { background: #E2E8F0; color: #334155; border: 1px solid #CBD5E1; min-height: 38px; padding: 8px 14px; font-size: 12.5px; font-weight: 700; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+        .btn-secondary:hover { background: #CBD5E1; color: #0F172A; }
         
         .item-list { list-style: none; }
-        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #fafcfb; border: 1px solid #e5ede8; border-radius: 8px; margin-bottom: 8px; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 13px 15px; background: #fafcfb; border: 1px solid #e2ebe6; border-radius: 10px; margin-bottom: 9px; transition: border-color 0.2s; }
+        .item-row:hover { border-color: var(--primary-light); }
         .item-meta { flex: 1; }
-        .item-title { font-size: 13px; font-weight: 700; color: var(--primary-dark); }
-        .item-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+        .item-title { font-size: 13.5px; font-weight: 700; color: var(--primary-dark); }
+        .item-sub { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
         
-        .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+        .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
         @media (max-width: 600px) { .stat-grid { grid-template-columns: 1fr; } }
-        .stat-box { background: #fff; padding: 14px; border-radius: 10px; text-align: center; border: 1px solid #e0eae4; }
+        .stat-box { background: #fff; padding: 16px; border-radius: 12px; text-align: center; border: 1px solid #e0eae4; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
         .stat-box.balance { border-top: 4px solid var(--primary); }
         .stat-box.income { border-top: 4px solid var(--success); }
         .stat-box.expense { border-top: 4px solid var(--danger); }
-        .stat-val { font-size: 18px; font-weight: 800; margin-top: 4px; }
-        .stat-title { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
+        .stat-val { font-size: 19px; font-weight: 800; margin-top: 4px; font-family: 'Rajdhani', sans-serif; letter-spacing: 0.5px; }
+        .stat-title { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
         
-        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #111827; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.3); opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 1000; }
-        .toast.show { opacity: 1; }
+        .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #022C22; color: #FDE68A; border: 1.5px solid var(--gold); padding: 12px 24px; border-radius: 30px; font-size: 13.5px; font-weight: 700; box-shadow: 0 8px 24px rgba(0,0,0,0.35); opacity: 0; pointer-events: none; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); z-index: 10000; display: inline-flex; align-items: center; gap: 8px; }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(-6px); }
         
-        .pill-switch { display: flex; background: #eef4f0; padding: 3px; border-radius: 8px; margin-bottom: 12px; gap: 4px; }
-        .pill-btn { flex: 1; border: none; background: transparent; padding: 7px 10px; font-size: 12px; font-weight: 600; color: var(--text-muted); border-radius: 6px; cursor: pointer; text-align: center; }
-        .pill-btn.active { background: #fff; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.06); font-weight: 700; }
+        .pill-switch { display: flex; background: #e2ede6; padding: 4px; border-radius: 10px; margin-bottom: 14px; gap: 4px; }
+        .pill-btn { flex: 1; border: none; background: transparent; padding: 9px 12px; font-size: 12.5px; font-weight: 700; color: var(--text-muted); border-radius: 8px; cursor: pointer; text-align: center; transition: all 0.2s; }
+        .pill-btn.active { background: #fff; color: var(--primary); box-shadow: 0 2px 6px rgba(0,0,0,0.08); font-weight: 800; }
 
-        .img-preview-box { width: 100%; border-radius: 10px; border: 2px dashed #cfdcd5; padding: 12px; text-align: center; margin-bottom: 12px; background: #fafcfb; }
+        .img-preview-box { width: 100%; border-radius: 12px; border: 2px dashed #bbf7d0; padding: 14px; text-align: center; margin-bottom: 14px; background: #f0fdf4; }
         .img-preview-box img { max-width: 100%; max-height: 200px; border-radius: 8px; object-fit: contain; }
 
         /* Login Screen Styling */
@@ -2735,7 +2851,7 @@ class LocalHttpServer(
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #022018 0%, #064E3B 50%, #0B3322 100%);
+            background: radial-gradient(circle at 50% 25%, #064E3B 0%, #022C22 65%, #01140E 100%);
             padding: 20px;
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -2743,58 +2859,62 @@ class LocalHttpServer(
         }
         .login-card {
             background: #ffffff;
-            border-radius: 16px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(212,175,55,0.3);
+            border-radius: 18px;
+            box-shadow: 0 24px 50px rgba(0,0,0,0.5), 0 0 0 2px rgba(212,175,55,0.3);
             width: 100%;
-            max-width: 420px;
+            max-width: 430px;
             overflow: hidden;
-            border: 2px solid #D4AF37;
+            border: 2px solid var(--gold);
         }
         .login-header {
-            background: linear-gradient(135deg, #073B24 0%, #0D5C3A 100%);
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
             color: #ffffff;
-            padding: 28px 24px;
+            padding: 30px 24px;
             text-align: center;
-            border-bottom: 3px solid #D4AF37;
+            border-bottom: 3px solid var(--gold);
         }
         .login-header .mosque-icon {
-            font-size: 40px;
+            font-size: 44px;
             margin-bottom: 8px;
             display: inline-block;
+            filter: drop-shadow(0 4px 10px rgba(212,175,55,0.4));
         }
         .login-header h1 {
-            font-size: 20px;
+            font-size: 21px;
             font-weight: 800;
-            color: #F3E5AB;
+            color: var(--gold-light);
             letter-spacing: 0.5px;
         }
         .login-header p {
-            font-size: 12px;
-            color: #A5D6A7;
+            font-size: 12.5px;
+            color: #A7F3D0;
             margin-top: 4px;
+            font-weight: 500;
         }
         .login-body {
-            padding: 24px;
+            padding: 26px 24px;
         }
         .login-input-wrap {
             position: relative;
-            margin-bottom: 16px;
+            margin-bottom: 18px;
         }
         .login-input-wrap input {
             width: 100%;
-            padding: 12px 44px 12px 14px;
+            min-height: 48px;
+            padding: 12px 46px 12px 16px;
             font-size: 16px;
-            border: 2px solid #cfdcd5;
+            border: 2px solid #CBD5E1;
             border-radius: 10px;
-            background: #fafcfb;
-            color: #111;
+            background: #FAFCFB;
+            color: #0F172A;
             box-sizing: border-box;
             letter-spacing: 2px;
+            transition: all 0.2s;
         }
         .login-input-wrap input:focus {
             outline: none;
-            border-color: #0D5C3A;
-            box-shadow: 0 0 0 3px rgba(13,92,58,0.2);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(16,185,129,0.22);
             background: #fff;
         }
         .login-toggle-eye {
@@ -2806,30 +2926,30 @@ class LocalHttpServer(
             border: none;
             cursor: pointer;
             font-size: 18px;
-            color: #5A7569;
-            padding: 4px;
+            color: #64748B;
+            padding: 6px;
         }
         .login-error {
             background: #FEE2E2;
             color: #DC2626;
-            padding: 10px 14px;
-            border-radius: 8px;
+            padding: 11px 14px;
+            border-radius: 10px;
             font-size: 13px;
-            font-weight: 600;
+            font-weight: 700;
             border: 1px solid #FCA5A5;
-            margin-bottom: 16px;
+            margin-bottom: 18px;
             display: none;
             text-align: center;
         }
         .login-hint {
-            font-size: 11px;
-            color: #5A7569;
+            font-size: 11.5px;
+            color: #526B61;
             text-align: center;
-            margin-top: 16px;
-            line-height: 1.5;
+            margin-top: 18px;
+            line-height: 1.55;
             background: #F4F7F5;
-            padding: 10px;
-            border-radius: 8px;
+            padding: 12px;
+            border-radius: 10px;
             border: 1px solid #E0EAE4;
         }
         .btn-logout {
@@ -2837,7 +2957,7 @@ class LocalHttpServer(
             border: 1px solid #EF4444;
             color: #FECACA;
             font-size: 11px;
-            padding: 4px 10px;
+            padding: 5px 12px;
             border-radius: 8px;
             font-weight: 700;
             cursor: pointer;
@@ -2858,39 +2978,40 @@ class LocalHttpServer(
             align-items: center;
             justify-content: center;
             padding: 16px;
-            backdrop-filter: blur(4px);
+            backdrop-filter: blur(5px);
         }
         .modal-box {
             background: #fff;
-            border-radius: 14px;
+            border-radius: 16px;
             max-width: 580px;
             width: 100%;
             max-height: 90vh;
             overflow-y: auto;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.35);
-            border: 2px solid #0D5C3A;
+            box-shadow: 0 24px 48px rgba(0,0,0,0.4);
+            border: 2px solid var(--primary);
             animation: modalFadeIn 0.22s ease-out;
         }
         @keyframes modalFadeIn {
-            from { transform: scale(0.92) translateY(10px); opacity: 0; }
+            from { transform: scale(0.94) translateY(10px); opacity: 0; }
             to { transform: scale(1) translateY(0); opacity: 1; }
         }
         .modal-header {
-            background: linear-gradient(135deg, #073B24, #0D5C3A);
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
             color: #fff;
-            padding: 14px 18px;
-            border-radius: 12px 12px 0 0;
+            padding: 15px 20px;
+            border-radius: 14px 14px 0 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
             position: sticky;
             top: 0;
             z-index: 10;
+            border-bottom: 2px solid var(--gold);
         }
         .modal-header h3 {
             font-size: 16px;
             font-weight: 800;
-            color: #F3E5AB;
+            color: var(--gold-light);
             margin: 0;
             display: flex;
             align-items: center;
@@ -2915,7 +3036,7 @@ class LocalHttpServer(
             background: #DC2626;
         }
         .modal-body {
-            padding: 20px;
+            padding: 22px;
             color: #0F172A;
         }
         .modal-body label {
@@ -2923,15 +3044,16 @@ class LocalHttpServer(
             font-size: 13px;
             font-weight: 700;
             color: #0F172A !important;
-            margin-bottom: 5px;
+            margin-bottom: 6px;
         }
         .form-input {
             width: 100%;
-            padding: 10px 13px;
+            min-height: 44px;
+            padding: 10px 14px;
             font-size: 14px;
             font-weight: 600;
             border: 1.5px solid #94A3B8;
-            border-radius: 8px;
+            border-radius: 10px;
             background: #F8FAFC;
             color: #0F172A;
             transition: all 0.2s;
@@ -2949,27 +3071,27 @@ class LocalHttpServer(
         .form-control::placeholder,
         input::placeholder,
         textarea::placeholder {
-            color: #475569 !important;
-            font-weight: 600 !important;
+            color: #64748B !important;
+            font-weight: 500 !important;
             opacity: 1 !important;
         }
         .form-input::-webkit-input-placeholder,
         .form-control::-webkit-input-placeholder,
         input::-webkit-input-placeholder,
         textarea::-webkit-input-placeholder {
-            color: #475569 !important;
-            font-weight: 600 !important;
+            color: #64748B !important;
+            font-weight: 500 !important;
             opacity: 1 !important;
         }
         .color-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 10px 14px;
+            padding: 11px 15px;
             background: #F1F5F9;
-            border-radius: 8px;
+            border-radius: 10px;
             border: 1.5px solid #CBD5E1;
-            margin-bottom: 8px;
+            margin-bottom: 9px;
         }
         .color-row label, .color-row span {
             font-size: 13px;
@@ -3007,12 +3129,20 @@ class LocalHttpServer(
             color: #374151;
             width: 76px;
             text-align: center;
-            padding: 5px;
-            border: 1px solid #D1D5DB;
-            border-radius: 6px;
+            padding: 6px;
+            border: 1px solid #CBD5E1;
+            border-radius: 8px;
             background: #fff;
         }
-    </style>
+
+.worship-settings { margin-top:20px; padding-top:16px; border-top:1px solid #D1E7DD; }
+.worship-settings h3 { margin-bottom:10px; }
+.worship-settings p { line-height:1.6; margin:10px 0; }
+.worship-option { display:flex; align-items:flex-start; gap:10px; min-height:44px; padding:8px 0; line-height:1.5; }
+.worship-option input { flex-shrink:0; width:18px; height:18px; margin-top:2px; }
+.worship-settings button, .worship-settings input[type=number] { min-height:44px; }
+.worship-settings :focus-visible { outline:3px solid #12634B; outline-offset:3px; }
+</style>
 </head>
 <body>
     <!-- UNIVERSAL MODAL POPUP DI WEB ADMIN -->
@@ -3032,22 +3162,22 @@ class LocalHttpServer(
             <div class="login-header">
                 <div class="mosque-icon">🕌</div>
                 <h1>MasjidKU TV Remote</h1>
-                <p id="loginMosqueName">Portal Keamanan Pengurus Masjid</p>
+                <p id="loginMosqueName">MASJID ENDAN ANDANSIH (Purwakarta)</p>
             </div>
             <div class="login-body">
                 <div id="loginError" class="login-error"></div>
                 <form id="formLogin" onsubmit="handleLoginSubmit(event)">
                     <div class="form-group">
-                        <label style="font-size:13px; font-weight:700; color:#1A2E26; margin-bottom:8px; display:block;">
+                        <label style="font-size:13px; font-weight:700; color:#0F172A; margin-bottom:8px; display:block;">
                             🔐 Masukkan PIN / Password Pengurus
                         </label>
                         <div class="login-input-wrap">
-                            <input type="password" id="inputPin" placeholder="Masukkan PIN (Default: 123456)" required autofocus autocomplete="current-password">
+                            <input type="password" id="inputPin" placeholder="Masukkan PIN DKM (Default: 123456)" required autofocus autocomplete="current-password">
                             <button type="button" class="login-toggle-eye" onclick="togglePinVisibility()" title="Lihat/Sembunyikan PIN">👁️</button>
                         </div>
                     </div>
                     <button type="submit" class="btn-gold" style="font-size:15px; padding:12px; font-weight:800; letter-spacing:0.5px;" id="btnLoginSubmit">
-                        🔑 Masuk ke Web Remote
+                        🔑 Masuk ke Web Remote TV
                     </button>
                 </form>
                 <div class="login-hint">
@@ -3064,17 +3194,17 @@ class LocalHttpServer(
             <div class="header-content">
                 <div>
                     <div class="brand-title">🕌 TV MASJIDKU REMOTE</div>
-                    <div class="brand-subtitle" id="headerMosqueName">Memuat data masjid...</div>
+                    <div class="brand-subtitle" id="headerMosqueName">MASJID ENDAN ANDANSIH</div>
                 </div>
-                <div style="display:flex; flex-direction:column; align-items:flex-end; gap:5px;">
+                <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
                     <div style="display:flex; align-items:center; gap:8px;">
-                        <div class="live-badge">🟢 TERHUBUNG</div>
+                        <div class="live-badge">🟢 LIVE REMOTE</div>
                         <button class="btn-logout" onclick="handleLogout()" title="Kunci & Keluar">🔒 Keluar</button>
                     </div>
                     <div style="font-size:11px; text-align:right;">
-                        <a href="https://app.alijaya.com/donasi" target="_blank" rel="noopener noreferrer" style="color:#FDE68A; text-decoration:none; font-weight:700; background:rgba(217,119,6,0.35); border:1px solid rgba(253,230,138,0.5); padding:2px 8px; border-radius:6px; display:inline-flex; align-items:center; gap:4px; transition:all 0.2s;" onmouseover="this.style.background='rgba(217,119,6,0.6)';this.style.borderColor='#FDE68A'" onmouseout="this.style.background='rgba(217,119,6,0.35)';this.style.borderColor='rgba(253,230,138,0.5)'">
-                            ❤️ Design by <u>ALIJAYA-NET</u>
-                        </a>
+                        <span style="color:#FDE68A; font-weight:700; background:rgba(217,119,6,0.35); border:1px solid rgba(253,230,138,0.5); padding:2px 8px; border-radius:6px; display:inline-flex; align-items:center; gap:4px;">
+                            ✨ Pengembang: <u>Muhammad Irsyad Sirojul Khoeir (irsyads.com)</u>
+                        </span>
                     </div>
                 </div>
             </div>
@@ -3096,6 +3226,39 @@ class LocalHttpServer(
         <button class="tab-btn" onclick="switchTab('tab-kontrol')">⚡ Tampilan & Kontrol</button>
     </div>
 
+    <!-- QUICK REMOTE TV ACTION BAR (1-KLIK KONTROL TV LANGSUNG DARI HP DKM) -->
+    <div class="quick-remote-wrapper">
+        <div class="quick-remote-card">
+            <div class="quick-remote-header">
+                <div class="quick-remote-title">
+                    <span class="live-pulse-dot"></span>
+                    <span>KONTROL TV LANGSUNG (1-KLIK)</span>
+                </div>
+                <div class="quick-remote-subtitle">Sentuh tombol untuk langsung mengarahkan tampilan layar TV</div>
+            </div>
+            <div class="quick-remote-buttons">
+                <button type="button" class="btn-qr btn-qr-reset" onclick="triggerAction('reset')" title="Kembalikan TV ke Tampilan Normal">
+                    🔄 Normal
+                </button>
+                <button type="button" class="btn-qr btn-qr-preadhan" onclick="triggerAction('preadhan')" title="Mulai Hitung Mundur Pra-Adzan (30 Detik)">
+                    ⏳ Pra-Adzan
+                </button>
+                <button type="button" class="btn-qr btn-qr-adhan" onclick="triggerAction('adhan')" title="Tampilkan Layar Seruan Adzan">
+                    📢 Adzan
+                </button>
+                <button type="button" class="btn-qr btn-qr-iqomah" onclick="triggerAction('iqomah')" title="Tampilkan Hitung Mundur Iqomah">
+                    ⏱️ Iqomah
+                </button>
+                <button type="button" class="btn-qr btn-qr-sholat" onclick="triggerAction('sholat')" title="Layar Hening Khusyuk Sholat Berjamaah">
+                    🔕 Sholat Hening
+                </button>
+                <button type="button" class="btn-qr btn-qr-sound" onclick="triggerAction('sound')" title="Bunyikan Suara Bel Chime Masuk Sholat">
+                    🔔 Bel Chime
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <!-- 1. TAB PROFIL -->
         <div id="tab-profil" class="section-tab active">
@@ -3106,15 +3269,15 @@ class LocalHttpServer(
                 <form id="formProfil" onsubmit="saveProfil(event)">
                     <div class="form-group">
                         <label>Nama Masjid</label>
-                        <input type="text" id="cfgMosqueName" class="form-control" placeholder="Contoh: Masjid Raya Al-Falah" required>
+                        <input type="text" id="cfgMosqueName" class="form-control" placeholder="Contoh: MASJID ENDAN ANDANSIH" required>
                     </div>
                     <div class="form-group">
                         <label>Tagline / Motto</label>
-                        <input type="text" id="cfgTagline" class="form-control" placeholder="Motto masjid">
+                        <input type="text" id="cfgTagline" class="form-control" placeholder="Neglasari, Kec. Darangdan, Kab. Purwakarta">
                     </div>
                     <div class="form-group">
                         <label>Alamat Lengkap</label>
-                        <textarea id="cfgAddress" class="form-control" rows="2" placeholder="Jl. ..."></textarea>
+                        <textarea id="cfgAddress" class="form-control" rows="2" placeholder="Neglasari, Kec. Darangdan, Kabupaten Purwakarta, Jawa Barat 41163"></textarea>
                     </div>
                     <!-- KARTU PETA INTERAKTIF & KOORDINAT PRESISI -->
                     <div class="form-group" style="background:#F0FDF4; padding:14px; border-radius:12px; border:1.5px solid #86EFAC; margin-bottom:15px;">
@@ -3173,25 +3336,25 @@ class LocalHttpServer(
                     <div class="grid-2">
                         <div class="form-group">
                             <label>Nama Wilayah / Kota di Layar</label>
-                            <input type="text" id="cfgCity" class="form-control">
+                            <input type="text" id="cfgCity" class="form-control" placeholder="Purwakarta">
                         </div>
                         <div class="form-group">
                             <label>No. Kontak DKM</label>
-                            <input type="text" id="cfgPhone" class="form-control">
+                            <input type="text" id="cfgPhone" class="form-control" placeholder="0812-3456-7890">
                         </div>
                     </div>
                     <div class="form-group">
                         <label>Nama Bank Infaq</label>
-                        <input type="text" id="cfgBankName" class="form-control" placeholder="BSI / BCA / Mandiri">
+                        <input type="text" id="cfgBankName" class="form-control" placeholder="Bank Syariah Indonesia (BSI)">
                     </div>
                     <div class="grid-2">
                         <div class="form-group">
                             <label>No. Rekening</label>
-                            <input type="text" id="cfgBankAccount" class="form-control">
+                            <input type="text" id="cfgBankAccount" class="form-control" placeholder="7123 4567 89">
                         </div>
                         <div class="form-group">
                             <label>Atas Nama (A/N)</label>
-                            <input type="text" id="cfgBankAccountName" class="form-control">
+                            <input type="text" id="cfgBankAccountName" class="form-control" placeholder="DKM MASJID ENDAN ANDANSIH">
                         </div>
                     </div>
                     <button type="submit" class="btn-primary">💾 Simpan Identitas & Lokasi Masjid</button>
@@ -3240,11 +3403,11 @@ class LocalHttpServer(
                         </div>
                         <div class="form-group">
                             <label>PIN / Password Baru</label>
-                            <input type="password" id="pwdNew" class="form-control" placeholder="Minimal 4 karakter/angka" minlength="4" required>
+                            <input type="password" id="pwdNew" class="form-control" placeholder="Minimal 6 karakter/angka" minlength="6" required>
                         </div>
                         <div class="form-group">
                             <label>Konfirmasi PIN Baru</label>
-                            <input type="password" id="pwdConfirm" class="form-control" placeholder="Ulangi PIN baru" minlength="4" required>
+                            <input type="password" id="pwdConfirm" class="form-control" placeholder="Ulangi PIN baru" minlength="6" required>
                         </div>
                     </div>
                     <button type="submit" class="btn-gold" style="padding:10px 18px; font-size:13px; font-weight:700; width:auto; display:inline-flex; align-items:center; gap:6px;">
@@ -3275,9 +3438,9 @@ class LocalHttpServer(
                         </div>
                     </div>
                     <div class="grid-3">
-                        <div class="form-group"><label>Latitude</label><input type="number" step="any" id="cfgLat2" class="form-control" oninput="document.getElementById('cfgLat').value=this.value; onManualCoordChange();"></div>
-                        <div class="form-group"><label>Longitude</label><input type="number" step="any" id="cfgLng2" class="form-control" oninput="document.getElementById('cfgLng').value=this.value; onManualCoordChange();"></div>
-                        <div class="form-group"><label>Zona Waktu (GMT+)</label><input type="number" step="0.5" id="cfgTimezone2" class="form-control" oninput="document.getElementById('cfgTimezone').value=this.value;"></div>
+                        <div class="form-group"><label>Latitude</label><input type="number" step="any" min="-90" max="90" aria-label="Latitude lokasi masjid" id="cfgLat2" class="form-control" oninput="document.getElementById('cfgLat').value=this.value; onManualCoordChange();"></div>
+                        <div class="form-group"><label>Longitude</label><input type="number" step="any" min="-180" max="180" aria-label="Longitude lokasi masjid" id="cfgLng2" class="form-control" oninput="document.getElementById('cfgLng').value=this.value; onManualCoordChange();"></div>
+                        <div class="form-group"><label>Zona Waktu (GMT+)</label><input type="number" step="0.5" min="-12" max="14" aria-label="Zona waktu masjid" id="cfgTimezone2" class="form-control" oninput="document.getElementById('cfgTimezone').value=this.value;"></div>
                     </div>
                     <div class="form-group">
                         <label>Koreksi Tanggal Hijriyah (Hari)</label>
@@ -3294,15 +3457,32 @@ class LocalHttpServer(
                     </div>
                     <h3 style="font-size:14px; margin:14px 0 8px; color:var(--primary);">Durasi Countdown Jeda Iqomah (Menit)</h3>
                     <div class="grid-2">
-                        <div class="form-group"><label>Iqomah Subuh</label><input type="number" id="iqSubuh" class="form-control"></div>
-                        <div class="form-group"><label>Iqomah Dzuhur (Hari Biasa)</label><input type="number" id="iqDzuhur" class="form-control"></div>
-                        <div class="form-group"><label>🕌 Iqomah Khusus Sholat Jum'at</label><input type="number" id="iqJumat" class="form-control" placeholder="15"></div>
-                        <div class="form-group"><label>Iqomah Ashar</label><input type="number" id="iqAshar" class="form-control"></div>
-                        <div class="form-group"><label>Iqomah Maghrib</label><input type="number" id="iqMaghrib" class="form-control"></div>
-                        <div class="form-group"><label>Iqomah Isya'</label><input type="number" id="iqIsya" class="form-control"></div>
-                        <div class="form-group"><label>Layar Hening Sholat</label><input type="number" id="sholatDuration" class="form-control"></div>
+                        <div class="form-group"><label>Iqomah Subuh</label><input type="number" id="iqSubuh" min="0" max="120" required class="form-control"></div>
+                        <div class="form-group"><label>Iqomah Dzuhur (Hari Biasa)</label><input type="number" id="iqDzuhur" min="0" max="120" required class="form-control"></div>
+                        <div class="form-group"><label>🕌 Iqomah Khusus Sholat Jum'at</label><input type="number" id="iqJumat" min="0" max="120" required class="form-control" placeholder="15"></div>
+                        <div class="form-group"><label>Iqomah Ashar</label><input type="number" id="iqAshar" min="0" max="120" required class="form-control"></div>
+                        <div class="form-group"><label>Iqomah Maghrib</label><input type="number" id="iqMaghrib" min="0" max="120" required class="form-control"></div>
+                        <div class="form-group"><label>Iqomah Isya'</label><input type="number" id="iqIsya" min="0" max="120" required class="form-control"></div>
+                        <div class="form-group"><label>Layar Hening Sholat</label><input type="number" id="sholatDuration" min="3" max="120" required class="form-control"></div>
                     </div>
-                    <button type="submit" class="btn-primary">💾 Simpan Visibilitas & Pengaturan Waktu</button>
+                    <section class="worship-settings" aria-label="Pengaturan adzan dan mode fokus"><h3>Adzan dan mode fokus</h3><p role="status" id="pinSetupNotice" hidden>Tetapkan PIN pribadi di Profil sebelum mengubah pengaturan masjid.</p>
+                    <p>Hitung mundur iqomah dimulai setelah durasi adzan. Pada Jumat, tahap khutbah berlangsung terlebih dahulu.</p>
+                    <div class="grid-2">
+                        <div class="form-group"><label for="adhanDurationSeconds">Durasi tampilan adzan (detik)</label><input id="adhanDurationSeconds" name="adhanDurationSeconds" autocomplete="off" inputmode="numeric" type="number" min="10" max="900" required class="form-control"></div>
+                        <div class="form-group"><label for="fridayKhutbahMinutes">Durasi khutbah otomatis (menit)</label><input id="fridayKhutbahMinutes" name="fridayKhutbahMinutes" autocomplete="off" inputmode="numeric" type="number" min="1" max="120" required class="form-control"></div>
+                    </div>
+                    <label class="worship-option"><input name="fridayKhutbahEnabled" id="fridayKhutbahEnabled" type="checkbox"> Aktifkan tahap khutbah Jumat setelah adzan</label><br>
+                    <label class="worship-option"><input name="fridayKhutbahManual" id="fridayKhutbahManual" type="checkbox"> Khutbah berakhir saat pengurus menekan Mulai iqomah (disarankan)</label><br>
+                    <label class="worship-option"><input name="focusBlankScreen" id="focusBlankScreen" type="checkbox"> Layar gelap sepenuhnya saat khutbah dan salat</label><br>
+                    <label class="worship-option"><input name="focusShowClock" id="focusShowClock" type="checkbox"> Tampilkan jam kecil pada layar fokus berpesan</label>
+                    <p>Mode fokus menghentikan media dan pengumuman. Atur lokasi di Identitas masjid; pilihan kota dan koordinat manual dapat dipakai tanpa peta online.</p>
+                    <div role="group" aria-label="Kontrol ibadah langsung" style="display:flex; flex-wrap:wrap; gap:8px; margin:16px 0;">
+                        <button type="button" class="btn-primary" onclick="triggerAction('khutbah')">Mulai khutbah</button>
+                        <button type="button" class="btn-primary" onclick="triggerAction('iqomah_friday')">Mulai iqomah Jumat</button>
+                        <button type="button" class="btn-primary" onclick="triggerAction('sholat_friday')">Mulai salat Jumat</button>
+                        <button type="button" class="btn-primary" onclick="triggerAction('reset')">Selesai salat / kembali ke informasi</button>
+                    </div>
+                    </section><button type="submit" class="btn-primary">💾 Simpan Visibilitas & Pengaturan Waktu</button>
                 </form>
             </div>
 
@@ -4344,6 +4524,7 @@ class LocalHttpServer(
 
         <!-- 8. TAB KONTROL & TAMPILAN -->
         <div id="tab-kontrol" class="section-tab">
+<div id="screenEditor" class="component-editor"></div>
             <div class="card">
                 <div class="card-header">
                     <h2>Model Tata Letak Layar TV (Layout Template)</h2>
@@ -4351,6 +4532,7 @@ class LocalHttpServer(
                 <div class="form-group">
                     <label>Pilih Model Desain TV Masjid</label>
                     <select id="cfgLayoutModel" class="form-control" onchange="saveLayoutModel(this.value)">
+<option value="CUSTOMIZABLE_BOARD">Papan Jadwal Editable — semua komponen dapat diatur</option>
                         <option value="MIHRAB_GRAND_ROYAL">🕌 Model 7: Grand Mihrab Nabawi (Portal Jam Kubah + Kartu Berkubah + Card Tengah Emas)</option>
                         <option value="CORDOBA_ANDALUSIA">🏛️ Model 8: Cordoba & Alhambra Moorish (Lengkung Tapal Kuda + QRIS Infaq)</option>
                         <option value="CAROUSEL_BOTTOM">📺 Model 1: Klasik TV Bar Bawah (Default Carousel)</option>
@@ -4783,8 +4965,8 @@ class LocalHttpServer(
                                 <strong style="color: #78350f; font-size: 13.5px;">Wajib Diketahui untuk Kamera TP-Link Tapo (C200, C210, C310, TC70, dll):</strong><br>
                                 1. Buka aplikasi Tapo di HP &rarr; Masuk ke <strong>Pengaturan Kamera (Ikon Gerigi) &rarr; Pengaturan Lanjutan &rarr; Akun Kamera</strong> &rarr; Buat Username &amp; Password akun kamera lokal.<br>
                                 2. Format URL RTSP yang WAJIB dimasukkan (harus menyertakan username &amp; password):<br>
-                                &bull; <strong style="color: #047857;">Sub-Stream (Sangat Direkomendasikan):</strong> <code style="background: #fef3c7; padding: 2px 6px; border-radius: 4px; font-weight: 700; color: #b45309;">rtsp://username:password@192.168.8.96:554/stream2</code> (Format H.264, instan terbuka, sangat ringan &amp; bebas buffering di TV).<br>
-                                &bull; <strong style="color: #1e40af;">Main Stream (1080p/2K):</strong> <code style="background: #fef3c7; padding: 2px 6px; border-radius: 4px; font-weight: 700; color: #b45309;">rtsp://username:password@192.168.8.96:554/stream1</code>.<br>
+                                &bull; <strong style="color: #047857;">Sub-Stream (Sangat Direkomendasikan):</strong> <code style="background: #fef3c7; padding: 2px 6px; border-radius: 4px; font-weight: 700; color: #b45309;">rtsp://username:password@192.168.1.100:554/stream2</code> (Format H.264, instan terbuka, sangat ringan &amp; bebas buffering di TV).<br>
+                                &bull; <strong style="color: #1e40af;">Main Stream (1080p/2K):</strong> <code style="background: #fef3c7; padding: 2px 6px; border-radius: 4px; font-weight: 700; color: #b45309;">rtsp://username:password@192.168.1.100:554/stream1</code>.<br>
                                 <em>Catatan: Jika tanpa username &amp; password, kamera Tapo otomatis menolak koneksi (Error 401).</em>
                             </div>
                         </div>
@@ -4820,7 +5002,7 @@ class LocalHttpServer(
                         </button>
                         <button type="button" class="btn-secondary" style="padding: 10px; text-align: left; background: #fafcfb; border: 1.5px solid #cbd5e1; border-radius: 8px;" onclick="applyCctvPreset('generic')">
                             <div style="font-weight: 800; color: #0f172a; font-size: 12.5px;">RTSP Standar / NVR / ONVIF</div>
-                            <div style="font-size: 11px; color: #64748b; margin-top: 2px;">rtsp://admin:pass@ip:554/live</div>
+                            <div style="font-size: 11px; color: #64748b; margin-top: 2px;">rtsp://username:password@192.168.1.100:554/live</div>
                         </button>
                     </div>
                 </div>
@@ -4845,7 +5027,7 @@ class LocalHttpServer(
                         </div>
                         <div class="form-group" style="margin-bottom: 10px;">
                             <label style="font-size: 12px; font-weight: 700; color: #334155;">URL Stream RTSP Kamera:</label>
-                            <input type="text" id="newCamUrl" class="form-control" placeholder="rtsp://admin:password@192.168.1.50:554/live/ch0" style="font-family: monospace;">
+                            <input type="text" id="newCamUrl" class="form-control" placeholder="rtsp://username:password@192.168.1.100:554/live/ch0" style="font-family: monospace;">
                         </div>
                         <div style="display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 12px;">
                             <label style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; cursor: pointer; color: #475569;">
@@ -5181,8 +5363,8 @@ class LocalHttpServer(
                 return;
             }
 
-            const initialLat = parseFloat(lat) || -6.3078;
-            const initialLng = parseFloat(lng) || 107.9945;
+            const initialLat = Number.isFinite(Number(lat)) ? Number(lat) : -6.6961;
+            const initialLng = Number.isFinite(Number(lng)) ? Number(lng) : 107.4239;
 
             if (!map) {
                 try {
@@ -5234,25 +5416,7 @@ class LocalHttpServer(
             if (elLat2) elLat2.value = fixedLat;
             if (elLng2) elLng2.value = fixedLng;
 
-            // Hitung otomatis Zona Waktu Indonesia (WIB, WITA, WIT)
-            let tz = 7.0;
-            let tzName = "WIB (GMT+7)";
-            const numLng = parseFloat(fixedLng);
-            if (numLng >= 115.0 && numLng < 125.0) {
-                tz = 8.0;
-                tzName = "WITA (GMT+8)";
-            } else if (numLng >= 125.0) {
-                tz = 9.0;
-                tzName = "WIT (GMT+9)";
-            }
-
-            const elTz = document.getElementById('cfgTimezone');
-            if (elTz) elTz.value = tz.toFixed(1);
-            const elTz2 = document.getElementById('cfgTimezone2');
-            if (elTz2) elTz2.value = tz.toFixed(1);
-
-            const tzBadge = document.getElementById('tzBadge');
-            if (tzBadge) tzBadge.innerText = tzName;
+            // Coordinate edits preserve the explicitly selected timezone.
 
             const cityInfo = document.getElementById('cityInfoText');
             if (cityInfo) {
@@ -5275,6 +5439,15 @@ class LocalHttpServer(
             }
         }
 
+        function setLocationTimezone(tz) {
+            for (const id of ['cfgTimezone', 'cfgTimezone2']) {
+                const field = document.getElementById(id);
+                if (field) field.value = Number(tz).toFixed(1);
+            }
+            const badge = document.getElementById('tzBadge');
+            if (badge) badge.textContent = tz === 7 ? 'WIB (UTC+7)' : tz === 8 ? 'WITA (UTC+8)' : tz === 9 ? 'WIT (UTC+9)' : 'UTC' + (tz >= 0 ? '+' : '') + tz;
+        }
+
         function onCitySelect(val) {
             if (!val) return;
             const parts = val.split('|');
@@ -5286,6 +5459,7 @@ class LocalHttpServer(
 
                 document.getElementById('cfgCity').value = cityName;
                 updateCoordsFromMap(lat, lng, true);
+                setLocationTimezone(tz);
                 if (marker) {
                     marker.bindPopup("<b>🕌 " + cityName + "</b><br>Geser pin ke lokasi masjid spesifik.").openPopup();
                 }
@@ -5381,7 +5555,9 @@ class LocalHttpServer(
         function renderData(data) {
             const cfg = data.config || {};
             window.currentConfig = cfg;
-            document.getElementById('headerMosqueName').innerText = cfg.mosqueName || 'Masjid';
+            adminScreenEditor.load(cfg.screenCustomizationJson);
+            document.getElementById("pinSetupNotice").hidden = !cfg.requiresPinChange;
+            document.getElementById('headerMosqueName').innerText = cfg.mosqueName || 'MASJID ENDAN ANDANSIH';
             document.getElementById('cfgMosqueName').value = cfg.mosqueName || '';
             document.getElementById('cfgTagline').value = cfg.tagline || '';
             document.getElementById('cfgAddress').value = cfg.address || '';
@@ -5391,9 +5567,9 @@ class LocalHttpServer(
             document.getElementById('cfgBankAccount').value = cfg.bankAccount || '';
             document.getElementById('cfgBankAccountName').value = cfg.bankAccountName || '';
 
-            const curLat = cfg.latitude || -6.3078;
-            const curLng = cfg.longitude || 107.9945;
-            const curTz = cfg.timezone || 7.0;
+            const curLat = cfg.latitude ?? -6.6961;
+            const curLng = cfg.longitude ?? 107.4239;
+            const curTz = cfg.timezone ?? 7.0;
 
             document.getElementById('cfgLat').value = curLat;
             document.getElementById('cfgLng').value = curLng;
@@ -5403,6 +5579,7 @@ class LocalHttpServer(
             if (document.getElementById('cfgTimezone2')) document.getElementById('cfgTimezone2').value = curTz.toFixed(1);
 
             initMap(curLat, curLng);
+            setLocationTimezone(curTz);
             document.getElementById('cfgHijri').value = cfg.hijriAdjustmentDays || 0;
             document.getElementById('cfgTheme').value = cfg.activeTheme || 'EMERALD_GOLD';
             document.getElementById('cfgLayoutModel').value = cfg.displayLayoutModel || 'CAROUSEL_BOTTOM';
@@ -5492,13 +5669,19 @@ class LocalHttpServer(
             document.getElementById('offMaghrib').value = cfg.offsetMaghrib || 2;
             document.getElementById('offIsya').value = cfg.offsetIsya || 2;
 
-            document.getElementById('iqSubuh').value = cfg.iqomahSubuh || 10;
-            document.getElementById('iqDzuhur').value = cfg.iqomahDzuhur || 10;
-            if (document.getElementById('iqJumat')) document.getElementById('iqJumat').value = cfg.iqomahJumat || 15;
-            document.getElementById('iqAshar').value = cfg.iqomahAshar || 10;
-            document.getElementById('iqMaghrib').value = cfg.iqomahMaghrib || 7;
-            document.getElementById('iqIsya').value = cfg.iqomahIsya || 10;
-            document.getElementById('sholatDuration').value = cfg.sholatDurationMinutes || 10;
+            document.getElementById('iqSubuh').value = cfg.iqomahSubuh ?? 10;
+            document.getElementById('iqDzuhur').value = cfg.iqomahDzuhur ?? 10;
+            if (document.getElementById('iqJumat')) document.getElementById('iqJumat').value = cfg.iqomahJumat ?? 15;
+            document.getElementById('iqAshar').value = cfg.iqomahAshar ?? 10;
+            document.getElementById('iqMaghrib').value = cfg.iqomahMaghrib ?? 7;
+            document.getElementById('iqIsya').value = cfg.iqomahIsya ?? 10;
+            document.getElementById('adhanDurationSeconds').value = cfg.adhanDurationSeconds ?? 30;
+            document.getElementById('fridayKhutbahEnabled').checked = cfg.fridayKhutbahEnabled ?? true;
+            document.getElementById('fridayKhutbahManual').checked = cfg.fridayKhutbahManual ?? true;
+            document.getElementById('fridayKhutbahMinutes').value = cfg.fridayKhutbahMinutes ?? 20;
+            document.getElementById('focusBlankScreen').checked = cfg.focusBlankScreen ?? false;
+            document.getElementById('focusShowClock').checked = cfg.focusShowClock ?? true;
+            document.getElementById('sholatDuration').value = cfg.sholatDurationMinutes ?? 10;
 
             // Stats
             document.getElementById('statBalance').innerText = formatRupiah(data.balance || 0);
@@ -5774,13 +5957,13 @@ class LocalHttpServer(
         var currentActiveCameraId = '';
 
         const CCTV_PRESETS = {
-            tapo_sub: 'rtsp://admin:password@192.168.8.96:554/stream2',
-            tapo_main: 'rtsp://admin:password@192.168.8.96:554/stream1',
-            hikvision: 'rtsp://admin:password@192.168.1.100:554/Streaming/Channels/101',
-            dahua: 'rtsp://admin:password@192.168.1.100:554/cam/realmonitor?channel=1&subtype=0',
-            ezviz: 'rtsp://admin:VERIFICATION_CODE@192.168.1.100:554/h264/ch1/main/av_stream',
-            xiongmai: 'rtsp://alijaya:060111@192.168.8.70:554/V_ENC_001',
-            generic: 'rtsp://admin:password@192.168.1.100:554/live'
+            tapo_sub: 'rtsp://username:password@192.168.1.100:554/stream2',
+            tapo_main: 'rtsp://username:password@192.168.1.100:554/stream1',
+            hikvision: 'rtsp://username:password@192.168.1.100:554/Streaming/Channels/101',
+            dahua: 'rtsp://username:password@192.168.1.100:554/cam/realmonitor?channel=1&subtype=0',
+            ezviz: 'rtsp://username:password@192.168.1.100:554/h264/ch1/main/av_stream',
+            xiongmai: 'rtsp://username:password@192.168.1.100:554/V_ENC_001',
+            generic: 'rtsp://username:password@192.168.1.100:554/live'
         };
 
         function applyCctvPreset(key) {
@@ -7020,7 +7203,7 @@ class LocalHttpServer(
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: new URLSearchParams({ enabled: 'false' }).toString()
             });
-            await fetch('/api/save-config', { method: 'POST', body: JSON.stringify({ mainScreenBgPreset: val }) });
+            await fetch('/api/save-config', { method: 'POST', body: JSON.stringify({ mainScreenBgPreset: val, backgroundType: val === 'CUSTOM_UPLOAD' ? 'IMAGE' : 'PRESET' }) });
             showToast('Background Layar Utama diubah!');
             loadStatus();
         }
@@ -7207,10 +7390,16 @@ class LocalHttpServer(
                 offsetIsya: document.getElementById('offIsya').value,
                 iqomahSubuh: document.getElementById('iqSubuh').value,
                 iqomahDzuhur: document.getElementById('iqDzuhur').value,
-                iqomahJumat: document.getElementById('iqJumat')?.value || 15,
+                iqomahJumat: document.getElementById('iqJumat')?.value ?? 15,
                 iqomahAshar: document.getElementById('iqAshar').value,
                 iqomahMaghrib: document.getElementById('iqMaghrib').value,
                 iqomahIsya: document.getElementById('iqIsya').value,
+                adhanDurationSeconds: document.getElementById('adhanDurationSeconds').value,
+                fridayKhutbahEnabled: document.getElementById('fridayKhutbahEnabled').checked,
+                fridayKhutbahManual: document.getElementById('fridayKhutbahManual').checked,
+                fridayKhutbahMinutes: document.getElementById('fridayKhutbahMinutes').value,
+                focusBlankScreen: document.getElementById('focusBlankScreen').checked,
+                focusShowClock: document.getElementById('focusShowClock').checked,
                 sholatDurationMinutes: document.getElementById('sholatDuration').value
             };
             await fetch('/api/save-config', { method: 'POST', body: JSON.stringify(payload) });
@@ -8614,6 +8803,13 @@ class LocalHttpServer(
                     localStorage.setItem('masjidku_session_token', data.token);
                     document.getElementById('inputPin').value = '';
                     showDashboard();
+                    if (data.requiresPinChange) {
+                        switchTab('tab-profil');
+                        document.getElementById('formChangePassword').scrollIntoView({block: 'center'});
+                        document.getElementById('pwdOld').value = pin;
+                        document.getElementById('pwdNew').focus();
+                        showToast('Tetapkan PIN pribadi sebelum mengubah pengaturan masjid.');
+                    }
                     showToast(data.message || 'Login berhasil! Selamat datang.');
                     loadStatus();
                 } else {
@@ -8674,7 +8870,9 @@ class LocalHttpServer(
                     alertBox.style.border = '1px solid #86EFAC';
                     alertBox.innerText = '✅ ' + data.message;
                     document.getElementById('formChangePassword').reset();
-                    showToast('PIN berhasil diperbarui!');
+                    localStorage.removeItem('masjidku_session_token');
+                    showLoginSection();
+                    showToast('PIN diperbarui. Silakan masuk dengan PIN baru.');
                 } else {
                     alertBox.style.background = '#FEE2E2';
                     alertBox.style.color = '#DC2626';
@@ -9326,7 +9524,73 @@ class LocalHttpServer(
         }
 
         checkAuthAndInit();
-    </script>
+    // Shared controls for local design preview and the embedded Android LAN admin.
+function createScreenEditor(host, options) {
+  const labels = {logo:'Logo',name:'Nama masjid',address:'Alamat',clock:'Jam',date:'Tanggal',countdown:'Hitung mundur',information:'Informasi & media',schedule:'Jadwal salat',ticker:'Maklumat'};
+  const editable = new Set(['name','address','countdown','information','ticker']);
+  let settings = {}; let dirty = false;
+  const defaults = () => ({visible:true,background:'#102B24',color:'#F5F7F4',opacity:0.75,size:1,text:''});
+  host.innerHTML = `<h2>Komponen layar</h2><p>Atur setiap komponen. Transparansi hanya memengaruhi latar panel, sehingga teks tetap jelas.</p>
+    <label for="editComponent">Komponen</label><select id="editComponent"></select>
+    <label class="check-row"><input id="componentVisible" type="checkbox"> Tampilkan komponen ini</label>
+    <div class="component-fields"><label>Warna latar<input id="componentBackground" type="color"></label><label>Warna teks<input id="componentColor" type="color"></label>
+    <label>Kepekatan latar <output id="componentOpacityValue"></output><input id="componentOpacity" type="range" min="0" max="100"></label>
+    <label>Ukuran <output id="componentSizeValue"></output><input id="componentSize" type="range" min="70" max="140"></label></div>
+    <label for="componentText">Teks pengganti (kosongkan untuk memakai data masjid)</label><textarea id="componentText" rows="3" maxlength="500"></textarea>
+    <p id="componentHint" class="hint"></p><div class="component-actions"><button type="button" id="saveComponents">${'$'}{options.preview ? 'Simpan di browser ini' : 'Simpan & terapkan di TV'}</button>
+    <button type="button" id="restoreComponent">Pulihkan komponen ini</button><button type="button" id="exportComponents">Unduh pengaturan</button>
+    <label>Impor pengaturan<input id="importComponents" type="file" accept="application/json,.json"></label></div><p id="componentStatus" role="status"></p>`;
+  const ${'$'} = id => host.querySelector('#'+id);
+  for (const [id,label] of Object.entries(labels)) { const item=document.createElement('option');item.value=id;item.textContent=label;${'$'}('editComponent').append(item); }
+  function normal(raw) {
+    return Object.fromEntries(Object.keys(labels).map(id => {
+      const c = raw?.[id] || {}, d=defaults();
+      for (const key of ['background','color']) if (/^#[0-9a-f]{6}${'$'}/i.test(c[key])) d[key]=c[key];
+      if (typeof c.visible==='boolean') d.visible=c.visible;
+      for (const [key,min,max] of [['opacity',0,1],['size',0.7,1.4]]) if (Number.isFinite(c[key])) d[key]=Math.max(min,Math.min(max,c[key]));
+      if (editable.has(id) && typeof c.text==='string') d.text=c.text.slice(0,500);
+      return [id,d];
+    }));
+  }
+  function render() {
+    const id=${'$'}('editComponent').value, c=settings[id];
+    ${'$'}('componentVisible').checked=c.visible;${'$'}('componentBackground').value=c.background;${'$'}('componentColor').value=c.color;
+    ${'$'}('componentOpacity').value=Math.round(c.opacity*100);${'$'}('componentOpacityValue').textContent=`${'$'}{Math.round(c.opacity*100)}%`;
+    ${'$'}('componentSize').value=Math.round(c.size*100);${'$'}('componentSizeValue').textContent=`${'$'}{Math.round(c.size*100)}%`;
+    ${'$'}('componentText').value=c.text;${'$'}('componentText').disabled=!editable.has(id);
+    ${'$'}('componentHint').textContent=id==='logo' ? (options.preview ? 'Unggah logo melalui Identitas masjid. Logo pratinjau tersimpan terpisah dari berkas pengaturan.' : 'Unggah atau hapus logo melalui tab Media → Logo Masjid.') : id==='information' ? 'Teks kosong menampilkan carousel. Warna isi kas, petugas, hadits dan media tetap memakai pengaturan tiap konten.' : !editable.has(id) ? 'Jam, tanggal dan jadwal memakai data otomatis. Ubah lokasi dan koreksi melalui pengaturan waktu.' : 'Teks pengganti hanya untuk komponen ini; data asal tetap tersimpan.';
+    options.onChange?.(settings);
+  }
+  function update() {
+    const id=${'$'}('editComponent').value;
+    settings[id]={visible:${'$'}('componentVisible').checked,background:${'$'}('componentBackground').value,color:${'$'}('componentColor').value,opacity:Number(${'$'}('componentOpacity').value)/100,size:Number(${'$'}('componentSize').value)/100,text:${'$'}('componentText').value};
+    dirty=true;render();${'$'}('componentStatus').textContent='Perubahan belum disimpan.';
+  }
+  for (const id of ['componentVisible','componentBackground','componentColor','componentOpacity','componentSize','componentText']) ${'$'}(id).addEventListener('input',update);
+  ${'$'}('editComponent').addEventListener('change',render);
+  ${'$'}('restoreComponent').addEventListener('click',()=>{settings[${'$'}('editComponent').value]=defaults();dirty=true;render();${'$'}('componentStatus').textContent='Komponen dipulihkan. Simpan untuk menerapkan.';});
+  ${'$'}('saveComponents').addEventListener('click',async()=>{
+    ${'$'}('saveComponents').disabled=true;
+    try { await options.save(settings);dirty=false;${'$'}('componentStatus').textContent=options.preview ? 'Tersimpan di browser ini. Belum dikirim ke TV.' : 'Tersimpan. Papan Jadwal Editable aktif di TV.'; }
+    catch(e) { ${'$'}('componentStatus').textContent='Gagal menyimpan: '+e.message; }
+    finally { ${'$'}('saveComponents').disabled=false; }
+  });
+  ${'$'}('exportComponents').addEventListener('click',()=>{const url=URL.createObjectURL(new Blob([JSON.stringify(settings,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='masjidku-komponen.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
+  ${'$'}('importComponents').addEventListener('change',async()=>{try{const file=${'$'}('importComponents').files[0];if(!file)return;if(file.size>20000)throw Error('Berkas maksimal 20 KB');const raw=JSON.parse(await file.text());if(!raw||Array.isArray(raw)||typeof raw!=='object')throw Error('Format pengaturan tidak valid');settings=normal(raw);dirty=true;render();${'$'}('componentStatus').textContent='Pengaturan diimpor. Periksa lalu simpan.';}catch(e){${'$'}('componentStatus').textContent=e.message;}finally{${'$'}('importComponents').value='';}});
+  return {load(json){if(dirty)return;try{settings=normal(JSON.parse(json||'{}'));}catch{settings=normal({});}render();}};
+}
+
+const editorStyles = `.component-editor{margin:20px 0;padding:20px;border:1px solid #ccdcd3;border-radius:12px;background:#fff;color:#17392c;min-width:0}.component-editor h2{margin:0 0 8px}.component-editor p{margin:8px 0;font-size:14px}.component-editor>label{display:block;margin-top:14px}.component-editor select,.component-editor textarea{width:100%;padding:10px;border:1px solid #b7cbbf;border-radius:6px;font:inherit}.component-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:16px 0}.component-fields label{display:grid;gap:6px;min-width:0}.component-fields input{width:100%;min-height:44px}.component-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}.component-actions button{min-height:44px;padding:10px;border:1px solid #b7cbbf;background:#eff6f1;color:#17392c;border-radius:6px;font:inherit}.component-actions input{max-width:100%;display:block}.component-editor :focus-visible{outline:3px solid #248166;outline-offset:3px}.component-editor .check-row{display:flex;align-items:center;gap:8px;min-height:44px}`;
+
+
+const componentStyle = document.createElement('style');componentStyle.textContent=editorStyles;document.head.append(componentStyle);
+const adminScreenEditor = createScreenEditor(document.getElementById('screenEditor'), {preview:false, save:async settings=>{
+    const response=await fetch('/api/save-config',{method:'POST',body:JSON.stringify({screenCustomizationJson:JSON.stringify(settings),displayLayoutModel:'CUSTOMIZABLE_BOARD'})});
+    const result=await response.json();if(!response.ok||result.success===false)throw Error(result.message||result.error||'Server menolak perubahan');
+    document.getElementById('cfgLayoutModel').value='CUSTOMIZABLE_BOARD';
+}});
+adminScreenEditor.load('');
+</script>
 </body>
 </html>
         """.trimIndent()

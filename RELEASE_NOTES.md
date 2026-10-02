@@ -1,3 +1,20 @@
+# MasjidKU TV 1.0.7-beta.1 — 2 Oktober 2026
+
+Credit by Muhammad Irsyad Sirojul Khoeir (irsyads.com)
+
+- Perbaikan pemilihan wallpaper dan pemulihan fallback gambar.
+- Lokasi/zona waktu, durasi adzan, iqomah Jumat, serta fokus khutbah/salat.
+- Papan Jadwal Editable dengan sembilan komponen, warna/kepekatan/ukuran/teks, logo dan ekspor/impor.
+- PIN awal wajib diganti; sesi admin lokal acak dan pencabutan sesi setelah perubahan PIN.
+- Migrasi Room 22 → 23 → 24 tanpa reset data otomatis.
+- Repository unduhan publik dan halaman web informasi.
+
+APK beta adalah build debug untuk perangkat uji, belum diuji pada TV/STB nyata. Kunci release asli diperlukan sebelum rilis stabil. Tidak dapat menimpa APK dengan kunci signing berbeda.
+
+---
+
+## Arsip catatan rilis lama
+
 # 📦 Catatan Rilis (Release Notes) - MasjidKU TV v1.0.1
 
 Dokumen ini berisi teks catatan rilis resmi yang siap disalin langsung ke kolom **Catatan Rilis (*Release Notes*)** di Google Play Console saat meluncurkan versi baru.

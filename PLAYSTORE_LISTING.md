@@ -12,6 +12,7 @@ Dokumen ini berisi seluruh teks dan metadata resmi siap pakai untuk pengunggahan
 | **Pilihan Nama Alternatif 1** | `MasjidKU TV: Jadwal Sholat TV` | 30 karakter |
 | **Pilihan Nama Alternatif 2** | `MasjidKU TV - Display Masjid` | 29 karakter |
 | **Application ID (Package)** | `com.alijayanet.masjidkutv` | Sesuai konfigurasi `build.gradle.kts` |
+| **Developer / Pengembang** | Muhammad Irsyad Sirojul Khoeir (irsyads.com) | Pengembang Resmi Aplikasi |
 | **Bahasa Utama (Default)** | Indonesian (`id-ID`) | Bahasa Indonesia |
 | **Bahasa Terjemahan (Opsi)** | English (`en-US`) | Tersedia di bawah |
 | **Tipe Aplikasi** | Aplikasi (App) | Bukan Game |

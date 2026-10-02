@@ -61,16 +61,16 @@ data class CctvCameraItem(
 }
 
 data class MosqueConfig(
-    val mosqueName: String = "MASJID BAITURROHMAN",
+    val mosqueName: String = "MASJID ENDAN ANDANSIH",
     val tagline: String = "Pusat Ibadah, Pembinaan Umat, & Dakwah Islam",
-    val address: String = "Desa Ujunggebang, Kecamatan Sukra - Indramayu",
-    val city: String = "Indramayu, Jawa Barat",
+    val address: String = "Neglasari, Kec. Darangdan, Kabupaten Purwakarta, Jawa Barat 41163",
+    val city: String = "Purwakarta, Jawa Barat",
     val phone: String = "0812-2214-534",
-    val bankName: String = "Bank BRI (Bank Rakyat Indonesia)",
-    val bankAccount: String = "4206 0101 2214 534",
-    val bankAccountName: String = "DKM BAITUR ROHMAN",
-    val latitude: Double = -6.3078,
-    val longitude: Double = 107.9945,
+    val bankName: String = "Bank Syariah Indonesia (BSI)",
+    val bankAccount: String = "7123 4567 89",
+    val bankAccountName: String = "DKM MASJID ENDAN ANDANSIH",
+    val latitude: Double = -6.6961,
+    val longitude: Double = 107.4239,
     val timezone: Double = 7.0,
     val calculationMethod: String = "KEMENAG", // KEMENAG, MWL, EGYPT
     val offsetImsak: Int = 0,
@@ -109,6 +109,13 @@ data class MosqueConfig(
     val tarawihOfficerLabelColor: String = "#38BDF8",
     val tarawihBgPreset: String = "PRESET_EMERALD_MIHRAB",
     val customTarawihBgPath: String = "",
+    val adhanDurationSeconds: Int = 30,
+    val fridayKhutbahEnabled: Boolean = true,
+    val fridayKhutbahManual: Boolean = true,
+    val fridayKhutbahMinutes: Int = 20,
+    val focusBlankScreen: Boolean = false,
+    val focusShowClock: Boolean = true,
+    val screenCustomizationJson: String = "",
     val sholatDurationMinutes: Int = 10,
     val hijriAdjustmentDays: Int = 0,
     val activeTheme: String = "EMERALD_GOLD", // EMERALD_GOLD, ROYAL_NAVY, SUNSET_AMBER, MIDNIGHT_CHARCOAL, MIHRAB_CLASSIC
@@ -491,6 +498,7 @@ enum class TVDisplayMode {
     PRE_ADHAN_COUNTDOWN,
     ADHAN,
     IQOMAH_COUNTDOWN,
+    KHUTBAH_FOCUS,
     SHOLAT_SILENT,
     FULLSCREEN_VIDEO,
     FULLSCREEN_CCTV

@@ -68,8 +68,14 @@ fun HeaderBar(
             IslamicGoldPrimary.copy(alpha = 0.35f)
         )
         else -> Pair(
-            Brush.horizontalGradient(listOf(SleekEmerald900.copy(alpha = 0.75f), SleekEmerald950.copy(alpha = 0.90f), SleekEmerald900.copy(alpha = 0.75f))),
-            Color(0x4434D399)
+            Brush.horizontalGradient(
+                listOf(
+                    TvSurfaceElevated.copy(alpha = 0.92f),
+                    TvSurfaceDeep.copy(alpha = 0.96f),
+                    TvSurfaceElevated.copy(alpha = 0.92f)
+                )
+            ),
+            AccentGoldPrimary.copy(alpha = 0.35f)
         )
     }
 
@@ -78,11 +84,11 @@ fun HeaderBar(
             .clip(RoundedCornerShape(16.dp))
             .background(headerBg)
             .border(1.2.dp, headerBorder, RoundedCornerShape(16.dp))
-            .padding(horizontal = 18.dp, vertical = 7.dp),
+            .padding(horizontal = 18.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        // Left: Mosque Identity & Logo (Sleek Amber Accent circle)
+        // Left: Mosque Identity & Logo
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp),
@@ -90,38 +96,32 @@ fun HeaderBar(
         ) {
             // Load custom logo from disk if available
             val customLogoBitmap = remember(config.customLogoImagePath) {
-                if (config.customLogoImagePath.isNotBlank()) {
-                    try {
-                        val file = File(config.customLogoImagePath)
-                        if (file.exists()) BitmapFactory.decodeFile(file.absolutePath)?.asImageBitmap()
-                        else null
-                    } catch (_: Exception) { null }
-                } else null
+                com.example.util.BitmapUtils.decodeSampledBitmapFromFile(config.customLogoImagePath, 256, 256)
             }
 
             Box(
                 modifier = Modifier
-                    .size(56.dp)
+                    .size(54.dp)
                     .clip(CircleShape)
                     .background(
                         Brush.radialGradient(
-                            listOf(SleekAmber400, SleekAmber500)
+                            listOf(AccentGoldVibrant, AccentGoldPrimary)
                         )
                     )
-                    .border(2.dp, SleekAmber100.copy(alpha = 0.8f), CircleShape),
+                    .border(2.dp, AccentGoldLight.copy(alpha = 0.85f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 if (customLogoBitmap != null) {
                     Image(
                         bitmap = customLogoBitmap,
                         contentDescription = "Logo Masjid",
-                        modifier = Modifier.size(44.dp).clip(CircleShape)
+                        modifier = Modifier.size(42.dp).clip(CircleShape)
                     )
                 } else {
                     Image(
                         painter = painterResource(id = R.drawable.ic_masjid_logo),
                         contentDescription = "Logo Masjid",
-                        modifier = Modifier.size(36.dp)
+                        modifier = Modifier.size(34.dp)
                     )
                 }
             }
@@ -129,10 +129,10 @@ fun HeaderBar(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = config.mosqueName.uppercase(),
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.Black,
-                    color = TextWhite,
-                    letterSpacing = (-0.3).sp,
+                    fontSize = 25.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = TextPrimaryHigh,
+                    letterSpacing = 0.2.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -143,10 +143,10 @@ fun HeaderBar(
                 ) {
                     Text(
                         text = if (config.tagline.isNotBlank()) config.tagline.uppercase() else "SMART MOSQUE SYSTEM",
-                        fontSize = 12.5.sp,
-                        color = SleekEmerald300,
+                        fontSize = 11.5.sp,
+                        color = AccentGoldVibrant,
                         fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp,
+                        letterSpacing = 0.8.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -154,17 +154,47 @@ fun HeaderBar(
                     if (addrText.isNotBlank()) {
                         Text(
                             text = "• $addrText",
-                            fontSize = 12.sp,
-                            color = TextWhiteDim,
+                            fontSize = 11.5.sp,
+                            color = TextSecondaryMedium,
+                            fontWeight = FontWeight.Normal,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
+                    }
+
+                    if (localIp.isNotBlank() && localIp != "127.0.0.1") {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Color(0x2E10B981))
+                                .border(0.8.dp, Color(0x6610B981), RoundedCornerShape(6.dp))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Wifi,
+                                    contentDescription = "Remote IP",
+                                    tint = EmeraldAccentGlow,
+                                    modifier = Modifier.size(11.dp)
+                                )
+                                Text(
+                                    text = "REMOTE: http://$localIp:8080",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = EmeraldAccentGlow,
+                                    fontFamily = OrbitronFont
+                                )
+                            }
+                        }
                     }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(14.dp))
 
         // Center-Right: Date & Hijri
         Column(
@@ -174,25 +204,25 @@ fun HeaderBar(
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.ic_islamic_star),
-                    contentDescription = "Star",
-                    modifier = Modifier.size(15.dp)
+                    contentDescription = "Islamic Star",
+                    modifier = Modifier.size(16.dp)
                 )
                 Text(
                     text = hijriDate,
-                    fontSize = 15.sp,
+                    fontSize = 15.5.sp,
                     fontWeight = FontWeight.Bold,
-                    color = SleekAmber400
+                    color = AccentGoldVibrant
                 )
             }
             Text(
                 text = gregorianDate.uppercase(),
                 fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = SleekEmerald300,
+                fontWeight = FontWeight.SemiBold,
+                color = TextSecondaryMedium,
                 letterSpacing = 0.5.sp
             )
         }
@@ -227,12 +257,17 @@ fun DigitalClockCard(
                 .clip(RoundedCornerShape(16.dp))
                 .background(
                     Brush.verticalGradient(
-                        listOf(Color(0xF2022014), Color(0xF201120B))
+                        listOf(
+                            TvSurfaceElevated.copy(alpha = 0.95f),
+                            TvSurfaceDeep.copy(alpha = 0.98f)
+                        )
                     )
                 )
                 .border(
-                    1.8.dp,
-                    Brush.linearGradient(listOf(Color(0xFFFFE082), Color(0xFFF59E0B), Color(0xFF34D399))),
+                    1.6.dp,
+                    Brush.linearGradient(
+                        listOf(AccentGoldPrimary, AccentGoldVibrant, EmeraldAccentGlow.copy(alpha = 0.4f))
+                    ),
                     RoundedCornerShape(16.dp)
                 )
                 .padding(horizontal = 16.dp, vertical = 6.dp)
@@ -248,7 +283,7 @@ fun DigitalClockCard(
                 // Hours
                 Text(
                     text = hours,
-                    fontSize = 60.sp,
+                    fontSize = 58.sp,
                     fontWeight = FontWeight.Bold,
                     color = hourMinColor,
                     fontFamily = clockFont,
@@ -258,7 +293,7 @@ fun DigitalClockCard(
                 // Pulsing Colon
                 Text(
                     text = ":",
-                    fontSize = 56.sp,
+                    fontSize = 54.sp,
                     fontWeight = FontWeight.Bold,
                     color = if (isBlinkColon) colonColor else Color.Transparent,
                     fontFamily = clockFont,
@@ -268,7 +303,7 @@ fun DigitalClockCard(
                 // Minutes
                 Text(
                     text = mins,
-                    fontSize = 60.sp,
+                    fontSize = 58.sp,
                     fontWeight = FontWeight.Bold,
                     color = hourMinColor,
                     fontFamily = clockFont,
@@ -294,7 +329,7 @@ fun DigitalClockCard(
                         text = "WIB",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = SleekEmerald300,
+                        color = EmeraldAccentGlow,
                         letterSpacing = 1.sp
                     )
                 }
@@ -307,14 +342,14 @@ fun DigitalClockCard(
             modifier = Modifier
                 .size(42.dp)
                 .clip(CircleShape)
-                .background(Color(0x26FFFFFF))
-                .border(1.dp, Color(0x33FFFFFF), CircleShape)
+                .background(Color(0x26000000))
+                .border(1.dp, AccentGoldMuted, CircleShape)
                 .testTag("btn_settings")
         ) {
             Icon(
                 imageVector = Icons.Default.Settings,
                 contentDescription = "Pengaturan",
-                tint = SleekAmber400,
+                tint = AccentGoldVibrant,
                 modifier = Modifier.size(24.dp)
             )
         }

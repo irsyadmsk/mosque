@@ -11,17 +11,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.NotificationsActive
-import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -30,20 +31,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
+import com.example.data.model.BackgroundPresetHelper
+import com.example.data.model.MosqueConfig
 import com.example.data.model.PrayerName
 import com.example.ui.theme.*
 
-import android.graphics.BitmapFactory
-import androidx.compose.runtime.remember
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
-import com.example.data.model.BackgroundPresetHelper
-import com.example.data.model.MosqueConfig
-import java.io.File
-
-// ----------------------------------------------------
-// RESPONSIVE PRAYER OFFICER BADGES (2-BARIS / MULTI-KOLOM)
-// ----------------------------------------------------
+// -------------------------------------------------------------------------
+// RESPONSIVE PRAYER OFFICER BADGES (UI/UX Pro Max Elevated Glass Cards)
+// -------------------------------------------------------------------------
 private data class PrayerOfficerBadgeInfo(
     val icon: String,
     val roleTitle: String,
@@ -69,10 +64,10 @@ fun PrayerOfficersBadges(
             list.add(
                 PrayerOfficerBadgeInfo(
                     icon = "🎙️",
-                    roleTitle = if (isHariRaya) "KHOTIB HARI RAYA:" else "KHOTIB JUM'AT:",
+                    roleTitle = if (isHariRaya) "KHOTIB HARI RAYA" else "KHOTIB JUM'AT",
                     name = khotibName,
-                    borderColor = SleekAmber400.copy(alpha = 0.85f),
-                    titleColor = SleekAmber300
+                    borderColor = AccentGoldVibrant,
+                    titleColor = AccentGoldLight
                 )
             )
         }
@@ -81,10 +76,10 @@ fun PrayerOfficersBadges(
             list.add(
                 PrayerOfficerBadgeInfo(
                     icon = "👳",
-                    roleTitle = if (isHariRaya) "IMAM SHOLAT IED:" else "IMAM SHOLAT:",
+                    roleTitle = if (isHariRaya) "IMAM SHOLAT IED" else "IMAM SHOLAT",
                     name = imamName,
-                    borderColor = SleekEmerald400.copy(alpha = 0.85f),
-                    titleColor = SleekEmerald300
+                    borderColor = EmeraldAccentGlow,
+                    titleColor = SleekEmerald200
                 )
             )
         }
@@ -93,10 +88,10 @@ fun PrayerOfficersBadges(
             list.add(
                 PrayerOfficerBadgeInfo(
                     icon = if (isHariRaya) "🌙" else "📢",
-                    roleTitle = if (isHariRaya) "PEMANDU TAKBIR:" else "MUADZIN:",
+                    roleTitle = if (isHariRaya) "PEMANDU TAKBIR" else "MUADZIN",
                     name = muadzinName,
-                    borderColor = Color(0x9934D399),
-                    titleColor = SleekEmerald300
+                    borderColor = AccentGoldPrimary,
+                    titleColor = AccentGoldLight
                 )
             )
         }
@@ -105,10 +100,10 @@ fun PrayerOfficersBadges(
             list.add(
                 PrayerOfficerBadgeInfo(
                     icon = "📜",
-                    roleTitle = if (isHariRaya) "BILAL / PROTOKOL:" else "BILAL:",
+                    roleTitle = if (isHariRaya) "BILAL / PROTOKOL" else "BILAL JUM'AT",
                     name = bilalName,
-                    borderColor = Color(0x9934D399),
-                    titleColor = SleekEmerald300
+                    borderColor = SleekEmerald400,
+                    titleColor = SleekEmerald200
                 )
             )
         }
@@ -127,12 +122,12 @@ fun PrayerOfficersBadges(
             badges.forEach { badge ->
                 OfficerBadgeCardItem(
                     badge = badge,
-                    modifier = Modifier.widthIn(min = 260.dp, max = 380.dp)
+                    modifier = Modifier.widthIn(min = 280.dp, max = 400.dp)
                 )
             }
         }
     } else {
-        // 2 Baris x 2 Kolom untuk responsive nama panjang di TV
+        // 2 Baris x 2 Kolom untuk responsive nama panjang di layar TV 1080p
         Column(
             modifier = modifier,
             verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -145,7 +140,7 @@ fun PrayerOfficersBadges(
                 badges.take(2).forEach { badge ->
                     OfficerBadgeCardItem(
                         badge = badge,
-                        modifier = Modifier.widthIn(min = 280.dp, max = 400.dp)
+                        modifier = Modifier.widthIn(min = 290.dp, max = 420.dp)
                     )
                 }
             }
@@ -156,7 +151,7 @@ fun PrayerOfficersBadges(
                 badges.drop(2).forEach { badge ->
                     OfficerBadgeCardItem(
                         badge = badge,
-                        modifier = Modifier.widthIn(min = 280.dp, max = 400.dp)
+                        modifier = Modifier.widthIn(min = 290.dp, max = 420.dp)
                     )
                 }
             }
@@ -171,19 +166,32 @@ private fun OfficerBadgeCardItem(
 ) {
     Row(
         modifier = modifier
-            .clip(RoundedCornerShape(14.dp))
-            .background(Color(0x40000000))
-            .border(1.5.dp, badge.borderColor, RoundedCornerShape(14.dp))
-            .padding(horizontal = 18.dp, vertical = 8.dp),
+            .clip(RoundedCornerShape(16.dp))
+            .background(
+                Brush.horizontalGradient(
+                    listOf(
+                        TvSurfaceElevated.copy(alpha = 0.90f),
+                        TvSurfaceDeep.copy(alpha = 0.96f)
+                    )
+                )
+            )
+            .border(
+                1.5.dp,
+                Brush.horizontalGradient(
+                    listOf(badge.borderColor.copy(alpha = 0.85f), badge.borderColor.copy(alpha = 0.35f))
+                ),
+                RoundedCornerShape(16.dp)
+            )
+            .padding(horizontal = 18.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Box(
             modifier = Modifier
-                .size(36.dp)
+                .size(38.dp)
                 .clip(CircleShape)
-                .background(badge.borderColor.copy(alpha = 0.15f))
-                .border(1.dp, badge.borderColor.copy(alpha = 0.35f), CircleShape),
+                .background(badge.borderColor.copy(alpha = 0.16f))
+                .border(1.2.dp, badge.borderColor.copy(alpha = 0.45f), CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Text(badge.icon, fontSize = 20.sp)
@@ -195,10 +203,10 @@ private fun OfficerBadgeCardItem(
         ) {
             Text(
                 text = badge.roleTitle,
-                fontSize = 11.sp,
+                fontSize = 11.5.sp,
                 color = badge.titleColor,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.5.sp,
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 0.8.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -206,7 +214,7 @@ private fun OfficerBadgeCardItem(
                 text = badge.name,
                 fontSize = if (badge.name.length > 22) 17.sp else 20.sp,
                 fontWeight = FontWeight.Black,
-                color = TextWhite,
+                color = TextPrimaryHigh,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -214,10 +222,9 @@ private fun OfficerBadgeCardItem(
     }
 }
 
-// ----------------------------------------------------
-// ----------------------------------------------------
-// 0. PRE-ADHAN COUNTDOWN OVERLAY (JELANG WAKTU SHOLAT)
-// ----------------------------------------------------
+// -------------------------------------------------------------------------
+// 0. PRE-ADHAN COUNTDOWN OVERLAY (JELANG WAKTU SHOLAT — UI/UX PRO MAX)
+// -------------------------------------------------------------------------
 @Composable
 fun PreAdhanCountdownOverlay(
     prayerName: PrayerName,
@@ -250,18 +257,24 @@ fun PreAdhanCountdownOverlay(
 
     val customCountdownBitmap = remember(config?.customCountdownBgPath) {
         val path = config?.customCountdownBgPath.orEmpty()
-        if (path.isNotBlank()) {
-            try {
-                val f = File(path)
-                if (f.exists()) BitmapFactory.decodeFile(f.absolutePath)?.asImageBitmap() else null
-            } catch (_: Exception) { null }
-        } else null
+        com.example.util.BitmapUtils.decodeSampledBitmapFromFile(path, 1920, 1080)
     }
 
     val countdownResId = remember(config?.countdownBgPreset) {
         val preset = config?.countdownBgPreset ?: BackgroundPresetHelper.PRESET_COUNTDOWN_PLAQUE
         BackgroundPresetHelper.getDrawableResId(preset) ?: R.drawable.bg_preset_countdown_plaque
     }
+
+    val infiniteTransition = rememberInfiniteTransition(label = "preadhan_pulse")
+    val urgentAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.65f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(550, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "urgent_alpha"
+    )
 
     Box(
         modifier = modifier.fillMaxSize(),
@@ -284,86 +297,123 @@ fun PreAdhanCountdownOverlay(
             )
         }
 
-        // Center-translucent contrast scrim: lets corners & lanterns shine, keeping center texts razor sharp
+        // Deep contrast scrim with sacred radial glow
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     if (isUrgent) {
                         Brush.radialGradient(
-                            colors = listOf(Color(0xD97F1D1D), Color(0x99000000), Color(0x40000000)),
-                            radius = 950f
+                            colors = listOf(
+                                Color(0xD97F1D1D).copy(alpha = urgentAlpha),
+                                Color(0xCC09121E),
+                                Color(0x99000000)
+                            ),
+                            radius = 1050f
                         )
                     } else {
                         Brush.radialGradient(
-                            colors = listOf(Color(0xB8000000), Color(0x73000000), Color(0x26000000)),
-                            radius = 950f
+                            colors = listOf(
+                                TvSurfaceDeep.copy(alpha = 0.88f),
+                                Color(0xCC000000),
+                                Color(0x66000000)
+                            ),
+                            radius = 1050f
                         )
                     }
                 )
         )
+
+        // Close / Dismiss button (10-foot TV Remote / pointer click)
         IconButton(
             onClick = onDismiss,
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .size(44.dp)
+                .padding(24.dp)
+                .size(46.dp)
                 .clip(CircleShape)
-                .background(Color(0x26FFFFFF))
+                .background(TvSurfaceElevated.copy(alpha = 0.75f))
+                .border(1.dp, Color(0x33FFFFFF), CircleShape)
         ) {
-            Icon(Icons.Default.Close, contentDescription = "Tutup", tint = Color.White, modifier = Modifier.size(24.dp))
+            Icon(
+                Icons.Default.Close,
+                contentDescription = "Tutup",
+                tint = TextPrimaryHigh,
+                modifier = Modifier.size(24.dp)
+            )
         }
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 32.dp)
         ) {
-            // Header Tag
+            // Header Pill Badge
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(RoundedCornerShape(50.dp))
                     .background(Color(0x33D4AF37))
-                    .border(1.2.dp, SleekAmber400.copy(alpha = 0.7f), RoundedCornerShape(20.dp))
-                    .padding(horizontal = 24.dp, vertical = 7.dp)
+                    .border(
+                        1.5.dp,
+                        Brush.horizontalGradient(
+                            listOf(AccentGoldLight, AccentGoldVibrant, AccentGoldPrimary)
+                        ),
+                        RoundedCornerShape(50.dp)
+                    )
+                    .padding(horizontal = 26.dp, vertical = 8.dp)
             ) {
-                Text(
-                    text = when {
-                        isHariRaya -> "🌙 GEMA TAKBIR & PERSIAPAN $prayerTitle"
-                        isFridayDzuhur -> "⏳ HITUNG MUNDUR MENJELANG SHOLAT JUM'AT"
-                        else -> "⏳ HITUNG MUNDUR MENJELANG WAKTU SHOLAT"
-                    },
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = SleekAmber300,
-                    letterSpacing = 2.sp
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text("✦", fontSize = 13.sp, color = AccentGoldVibrant)
+                    Text(
+                        text = when {
+                            isHariRaya -> "GEMA TAKBIR & PERSIAPAN $prayerTitle"
+                            isFridayDzuhur -> "HITUNG MUNDUR MENJELANG SHOLAT JUM'AT"
+                            else -> "HITUNG MUNDUR MENJELANG WAKTU SHOLAT"
+                        },
+                        fontSize = 14.5.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = AccentGoldLight,
+                        letterSpacing = 2.sp
+                    )
+                    Text("✦", fontSize = 13.sp, color = AccentGoldVibrant)
+                }
             }
 
             Spacer(modifier = Modifier.height(10.dp))
 
             Text(
                 text = if (isHariRaya) "PERSIAPAN $prayerTitle" else "PERSIAPAN SHOLAT $prayerTitle",
-                fontSize = 46.sp,
+                fontSize = 48.sp,
                 fontWeight = FontWeight.Black,
-                color = TextWhite,
+                color = TextPrimaryHigh,
                 textAlign = TextAlign.Center,
                 letterSpacing = (-0.5).sp
             )
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Big Digital Countdown Box (Bolder, Larger Islamic Digits)
+            // Massive Digital Countdown Box (Gold Gradient Rim / Pulsing Crimson Alert)
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(26.dp))
-                    .background(Color(0xF0000000))
+                    .background(Color(0xF5000000))
                     .border(
                         3.5.dp,
-                        if (isUrgent) Brush.linearGradient(listOf(ExpenseRed, Color(0xFFF87171)))
-                        else Brush.linearGradient(listOf(Color(0xFFFFE082), Color(0xFFF59E0B), Color(0xFFFFD54F))),
+                        if (isUrgent) {
+                            Brush.sweepGradient(listOf(ExpenseRed, Color(0xFFF87171), ExpenseRed))
+                        } else {
+                            Brush.sweepGradient(
+                                listOf(AccentGoldLight, AccentGoldVibrant, AccentGoldPrimary, AccentGoldLight)
+                            )
+                        },
                         RoundedCornerShape(26.dp)
                     )
-                    .padding(horizontal = 64.dp, vertical = 8.dp)
+                    .padding(horizontal = 60.dp, vertical = 10.dp)
             ) {
                 Row(
                     verticalAlignment = Alignment.Bottom,
@@ -371,29 +421,29 @@ fun PreAdhanCountdownOverlay(
                 ) {
                     Text(
                         text = timeFormatted,
-                        fontSize = 135.sp,
-                        lineHeight = 125.sp,
+                        fontSize = 138.sp,
+                        lineHeight = 126.sp,
                         fontWeight = FontWeight.Black,
-                        color = if (isUrgent) ExpenseRed else SleekAmber400,
+                        color = if (isUrgent) ExpenseRed else AccentGoldVibrant,
                         fontFamily = FontFamily.Monospace,
                         letterSpacing = (-2).sp
                     )
                     if (mins == 0) {
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(14.dp))
                         Text(
                             text = "detik",
                             fontSize = 32.sp,
                             fontWeight = FontWeight.Black,
                             color = if (isUrgent) Color(0xFFFCA5A5) else SleekAmber300,
-                            modifier = Modifier.padding(bottom = 24.dp)
+                            modifier = Modifier.padding(bottom = 22.dp)
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Imam, Khotib, Muadzin, Bilal Badges (Responsive 2 Baris / Multi Kolom)
+            // Imam, Khotib, Muadzin, Bilal Badges
             PrayerOfficersBadges(
                 imamName = imamName,
                 muadzinName = muadzinName,
@@ -403,34 +453,34 @@ fun PreAdhanCountdownOverlay(
                 isHariRaya = isHariRaya
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(18.dp))
 
-            // Reminder message
+            // Guidance Chip
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(Color(0x1AFFFFFF))
-                    .border(1.dp, Color(0x3334D399), RoundedCornerShape(20.dp))
-                    .padding(horizontal = 28.dp, vertical = 9.dp)
+                    .clip(RoundedCornerShape(50.dp))
+                    .background(TvSurfaceGlass)
+                    .border(1.2.dp, EmeraldAccentBorder, RoundedCornerShape(50.dp))
+                    .padding(horizontal = 30.dp, vertical = 10.dp)
             ) {
                 Text(
                     text = when {
-                        isHariRaya -> "🌸 Disunnahkan mandi hari raya, berwudhu, memakai pakaian terbaik & memperbanyak Takbir"
+                        isHariRaya -> "🌸 Disunnahkan mandi hari raya, berwudhu, memakai pakaian terbaik & memperbanyak takbir"
                         isFridayDzuhur -> "💧 Silakan mandi sunnah, berwudhu, memakai wewangian & mengisi shaf terdepan"
                         else -> "💧 Silakan mengambil air wudhu & bersiap mengisi shaf terdepan"
                     },
-                    fontSize = 15.sp,
+                    fontSize = 15.5.sp,
                     fontWeight = FontWeight.Bold,
-                    color = SleekEmerald200
+                    color = EmeraldAccentGlow
                 )
             }
         }
     }
 }
 
-// ----------------------------------------------------
-// 1. ADHAN FULLSCREEN OVERLAY (SLEEK MODERN)
-// ----------------------------------------------------
+// -------------------------------------------------------------------------
+// 1. ADHAN FULLSCREEN OVERLAY (MAJESTIC SACRED MOMENT — UI/UX PRO MAX)
+// -------------------------------------------------------------------------
 @Composable
 fun AdhanOverlay(
     prayerName: PrayerName,
@@ -445,9 +495,9 @@ fun AdhanOverlay(
     val infiniteTransition = rememberInfiniteTransition(label = "adhan_pulse")
     val glowScale by infiniteTransition.animateFloat(
         initialValue = 0.96f,
-        targetValue = 1.04f,
+        targetValue = 1.05f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1400, easing = FastOutSlowInEasing),
+            animation = tween(1500, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "glow_scale"
@@ -467,10 +517,11 @@ fun AdhanOverlay(
             .background(
                 Brush.radialGradient(
                     listOf(
-                        Color(0xFF065F46),
-                        Color(0xFF022C22),
-                        Color(0xFF011611)
-                    )
+                        Color(0xFF065F46), // Nabawi rich emerald
+                        Color(0xFF03281E),
+                        Color(0xFF01140E)  // Deep obsidian emerald
+                    ),
+                    radius = 1200f
                 )
             )
             .padding(24.dp),
@@ -481,11 +532,17 @@ fun AdhanOverlay(
             onClick = onDismiss,
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .size(44.dp)
+                .size(46.dp)
                 .clip(CircleShape)
-                .background(Color(0x26FFFFFF))
+                .background(TvSurfaceElevated.copy(alpha = 0.75f))
+                .border(1.dp, Color(0x33FFFFFF), CircleShape)
         ) {
-            Icon(Icons.Default.Close, contentDescription = "Tutup", tint = Color.White, modifier = Modifier.size(24.dp))
+            Icon(
+                Icons.Default.Close,
+                contentDescription = "Tutup",
+                tint = TextPrimaryHigh,
+                modifier = Modifier.size(24.dp)
+            )
         }
 
         Column(
@@ -493,65 +550,107 @@ fun AdhanOverlay(
             verticalArrangement = Arrangement.Center,
             modifier = Modifier.fillMaxWidth()
         ) {
-            // Sleek Illuminated Mosque Logo Badge
+            // Illuminated Mosque Logo Emblem with Pulsing Aura Ring
             Box(
-                modifier = Modifier
-                    .size(96.dp)
-                    .clip(CircleShape)
-                    .background(
-                        Brush.radialGradient(
-                            listOf(SleekAmber400, SleekAmber500)
-                        )
-                    )
-                    .border(2.5.dp, SleekAmber100.copy(alpha = 0.8f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_masjid_logo),
-                    contentDescription = "Logo Adzan",
-                    modifier = Modifier.size(60.dp)
+                // Outer subtle glowing aura ring
+                Box(
+                    modifier = Modifier
+                        .size(112.dp * glowScale)
+                        .clip(CircleShape)
+                        .background(Color(0x1AFBBF24))
+                        .border(1.5.dp, AccentGoldVibrant.copy(alpha = 0.45f), CircleShape)
                 )
+
+                // Inner Emblem
+                Box(
+                    modifier = Modifier
+                        .size(92.dp)
+                        .clip(CircleShape)
+                        .background(
+                            Brush.radialGradient(
+                                listOf(AccentGoldVibrant, Color(0xFFB45309))
+                            )
+                        )
+                        .border(2.5.dp, AccentGoldLight, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_masjid_logo),
+                        contentDescription = "Logo Adzan",
+                        modifier = Modifier.size(56.dp)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            Text(
-                text = when {
-                    isHariRaya -> "WAKTU PELAKSANAAN $prayerTitle TELAH TIBA"
-                    isFridayDzuhur -> "WAKTU SHOLAT JUM'AT TELAH TIBA"
-                    else -> "WAKTU SHOLAT TELAH TIBA"
-                },
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = SleekEmerald300,
-                letterSpacing = 3.sp
-            )
+            // Header Status Pill
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(50.dp))
+                    .background(Color(0x33D4AF37))
+                    .border(
+                        1.5.dp,
+                        Brush.horizontalGradient(
+                            listOf(AccentGoldLight, AccentGoldVibrant, AccentGoldPrimary)
+                        ),
+                        RoundedCornerShape(50.dp)
+                    )
+                    .padding(horizontal = 24.dp, vertical = 7.dp)
+            ) {
+                Text(
+                    text = when {
+                        isHariRaya -> "✦ WAKTU PELAKSANAAN $prayerTitle TELAH TIBA ✦"
+                        isFridayDzuhur -> "✦ WAKTU SHOLAT JUM'AT TELAH TIBA ✦"
+                        else -> "✦ WAKTU SHOLAT TELAH TIBA ✦"
+                    },
+                    fontSize = 14.5.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = AccentGoldLight,
+                    letterSpacing = 2.sp
+                )
+            }
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 text = if (isHariRaya) "GEMA TAKBIR $prayerTitle BERKUMANDANG" else "ADZAN $prayerTitle BERKUMANDANG",
-                fontSize = 46.sp,
+                fontSize = 48.sp,
                 fontWeight = FontWeight.Black,
-                color = TextWhite,
+                color = TextPrimaryHigh,
                 textAlign = TextAlign.Center,
                 letterSpacing = (-0.5).sp
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Arabic Call to Prayer / Takbiran
+            // Majestic Arabic Calligraphy
             Text(
                 text = if (isHariRaya) "اللهُ أَكْبَرُ اللهُ أَكْبَرُ • لَا إِلٰهَ إِلَّا اللهُ وَاللهُ أَكْبَرُ" else "حَيَّ عَلَى الصَّلَاةِ • حَيَّ عَلَى الْفَلَاحِ",
-                fontSize = 36.sp,
+                fontSize = 42.sp,
+                lineHeight = 52.sp,
                 fontWeight = FontWeight.Bold,
-                color = SleekAmber400,
+                fontFamily = FontFamily.Serif,
+                color = AccentGoldVibrant,
+                textAlign = TextAlign.Center,
+                letterSpacing = 1.sp
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = if (isHariRaya) "“Allah Maha Besar, Allah Maha Besar • Tiada Tuhan selain Allah dan Allah Maha Besar”" else "“Marilah mendirikan sholat • Marilah meraih kemenangan”",
+                fontSize = 16.5.sp,
+                fontWeight = FontWeight.Medium,
+                color = TextSecondaryMedium,
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Imam & Muadzin & Khotib & Bilal Badges (Responsive 2 Baris / Multi Kolom)
+            // Officers Badges (Imam, Muadzin, Khotib, Bilal)
             PrayerOfficersBadges(
                 imamName = imamName,
                 muadzinName = muadzinName,
@@ -561,33 +660,34 @@ fun AdhanOverlay(
                 isHariRaya = isHariRaya
             )
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(18.dp))
 
+            // Congregational Prompt
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(Color(0x26FFFFFF))
-                    .border(1.dp, Color(0x3334D399), RoundedCornerShape(24.dp))
-                    .padding(horizontal = 28.dp, vertical = 9.dp)
+                    .clip(RoundedCornerShape(50.dp))
+                    .background(TvSurfaceGlass)
+                    .border(1.2.dp, EmeraldAccentBorder, RoundedCornerShape(50.dp))
+                    .padding(horizontal = 30.dp, vertical = 10.dp)
             ) {
                 Text(
                     text = when {
-                        isHariRaya -> "Mari bersama-sama mengumandangkan takbir, tahmid & tahlil dengan penuh khusyuk"
-                        isFridayDzuhur -> "Mari mendengarkan adzan & khutbah Jum'at dengan khusyuk serta seksama"
-                        else -> "Mari menjawab seruan adzan & bersiap mendirikan sholat berjamaah"
+                        isHariRaya -> "🌸 Mari bersama-sama mengumandangkan takbir, tahmid & tahlil dengan penuh khusyuk"
+                        isFridayDzuhur -> "🕌 Mari mendengarkan adzan & khutbah Jum'at dengan khusyuk serta seksama"
+                        else -> "🕌 Mari menjawab seruan adzan & bersiap mendirikan sholat berjamaah"
                     },
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = SleekEmerald200
+                    color = EmeraldAccentGlow
                 )
             }
         }
     }
 }
 
-// ----------------------------------------------------
-// 2. IQOMAH COUNTDOWN OVERLAY (SLEEK MODERN)
-// ----------------------------------------------------
+// -------------------------------------------------------------------------
+// 2. IQOMAH COUNTDOWN OVERLAY (PRE-PRAYER URGENCY — UI/UX PRO MAX)
+// -------------------------------------------------------------------------
 @Composable
 fun IqomahOverlay(
     prayerName: PrayerName,
@@ -615,18 +715,24 @@ fun IqomahOverlay(
 
     val customCountdownBitmap = remember(config?.customCountdownBgPath) {
         val path = config?.customCountdownBgPath.orEmpty()
-        if (path.isNotBlank()) {
-            try {
-                val f = File(path)
-                if (f.exists()) BitmapFactory.decodeFile(f.absolutePath)?.asImageBitmap() else null
-            } catch (_: Exception) { null }
-        } else null
+        com.example.util.BitmapUtils.decodeSampledBitmapFromFile(path, 1920, 1080)
     }
 
     val countdownResId = remember(config?.countdownBgPreset) {
         val preset = config?.countdownBgPreset ?: BackgroundPresetHelper.PRESET_COUNTDOWN_PLAQUE
         BackgroundPresetHelper.getDrawableResId(preset) ?: R.drawable.bg_preset_countdown_plaque
     }
+
+    val infiniteTransition = rememberInfiniteTransition(label = "iqomah_pulse")
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.65f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(500, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "iqomah_pulse_alpha"
+    )
 
     Box(
         modifier = modifier.fillMaxSize(),
@@ -656,54 +762,87 @@ fun IqomahOverlay(
                 .background(
                     if (isLastSeconds) {
                         Brush.radialGradient(
-                            colors = listOf(Color(0xD9881337), Color(0x99000000), Color(0x40000000)),
-                            radius = 950f
+                            colors = listOf(
+                                Color(0xD9881337).copy(alpha = pulseAlpha),
+                                Color(0xCC09121E),
+                                Color(0x99000000)
+                            ),
+                            radius = 1050f
                         )
                     } else {
                         Brush.radialGradient(
-                            colors = listOf(Color(0xB8000000), Color(0x73000000), Color(0x26000000)),
-                            radius = 950f
+                            colors = listOf(
+                                TvSurfaceDeep.copy(alpha = 0.90f),
+                                Color(0xCC000000),
+                                Color(0x66000000)
+                            ),
+                            radius = 1050f
                         )
                     }
                 )
         )
+
         IconButton(
             onClick = onDismiss,
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .size(44.dp)
+                .padding(24.dp)
+                .size(46.dp)
                 .clip(CircleShape)
-                .background(Color(0x26FFFFFF))
+                .background(TvSurfaceElevated.copy(alpha = 0.75f))
+                .border(1.dp, Color(0x33FFFFFF), CircleShape)
         ) {
-            Icon(Icons.Default.Close, contentDescription = "Tutup", tint = Color.White, modifier = Modifier.size(24.dp))
+            Icon(
+                Icons.Default.Close,
+                contentDescription = "Tutup",
+                tint = TextPrimaryHigh,
+                modifier = Modifier.size(24.dp)
+            )
         }
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 32.dp)
         ) {
-            Text(
-                text = if (isHariRaya) "HITUNG MUNDUR MENJELANG SHOLAT" else "HITUNG MUNDUR MENUJU IQOMAH",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = SleekEmerald300,
-                letterSpacing = 2.5.sp
-            )
+            // Header Pill
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(50.dp))
+                    .background(Color(0x33D4AF37))
+                    .border(
+                        1.5.dp,
+                        Brush.horizontalGradient(
+                            listOf(AccentGoldLight, AccentGoldVibrant, AccentGoldPrimary)
+                        ),
+                        RoundedCornerShape(50.dp)
+                    )
+                    .padding(horizontal = 24.dp, vertical = 7.dp)
+            ) {
+                Text(
+                    text = if (isHariRaya) "✦ HITUNG MUNDUR MENJELANG SHOLAT ✦" else "✦ HITUNG MUNDUR MENUJU IQOMAH ✦",
+                    fontSize = 14.5.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = AccentGoldLight,
+                    letterSpacing = 2.sp
+                )
+            }
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 text = if (isHariRaya) "$prayerTitle BERJAMAAH" else "SHOLAT $prayerTitle BERJAMAAH",
-                fontSize = 42.sp,
+                fontSize = 44.sp,
                 fontWeight = FontWeight.Black,
-                color = TextWhite,
+                color = TextPrimaryHigh,
                 letterSpacing = (-0.5).sp
             )
 
-            // Imam, Khotib, Bilal Badges (Responsive - tampil semua petugas untuk Jumat/Hari Raya)
+            // Imam, Khotib, Bilal Badges
             if (imamName.isNotBlank() || khotibName.isNotBlank()) {
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 PrayerOfficersBadges(
                     imamName = imamName,
                     muadzinName = "",
@@ -714,67 +853,101 @@ fun IqomahOverlay(
                 )
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Massive Digital Countdown Box (Bolder, Larger Islamic Digits)
+            // Massive Digital Countdown Box
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(26.dp))
-                    .background(Color(0xF0000000))
+                    .background(Color(0xF5000000))
                     .border(
                         3.5.dp,
-                        if (isLastSeconds) Brush.linearGradient(listOf(ExpenseRed, Color(0xFFF87171)))
-                        else Brush.linearGradient(listOf(Color(0xFFFFE082), Color(0xFFF59E0B), Color(0xFFFFD54F))),
+                        if (isLastSeconds) {
+                            Brush.sweepGradient(listOf(ExpenseRed, Color(0xFFF87171), ExpenseRed))
+                        } else {
+                            Brush.sweepGradient(
+                                listOf(AccentGoldLight, AccentGoldVibrant, AccentGoldPrimary, AccentGoldLight)
+                            )
+                        },
                         RoundedCornerShape(26.dp)
                     )
-                    .padding(horizontal = 64.dp, vertical = 8.dp)
+                    .padding(horizontal = 64.dp, vertical = 10.dp)
             ) {
                 Text(
                     text = timeFormatted,
-                    fontSize = 135.sp,
-                    lineHeight = 125.sp,
+                    fontSize = 138.sp,
+                    lineHeight = 126.sp,
                     fontWeight = FontWeight.Black,
-                    color = if (isLastSeconds) ExpenseRed else SleekAmber400,
+                    color = if (isLastSeconds) ExpenseRed else AccentGoldVibrant,
                     fontFamily = FontFamily.Monospace,
                     letterSpacing = (-2).sp
                 )
             }
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            // Guidance & Reminder Badges
+            // Dual Guidance & Reminder Badges (Side-by-Side elevated glass cards)
             Row(
-                horizontalArrangement = Arrangement.spacedBy(18.dp),
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
                     modifier = Modifier
                         .clip(RoundedCornerShape(16.dp))
-                        .background(Color(0x1AFFFFFF))
-                        .border(1.dp, Color(0x3334D399), RoundedCornerShape(16.dp))
-                        .padding(horizontal = 20.dp, vertical = 10.dp),
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(
+                                    TvSurfaceElevated.copy(alpha = 0.90f),
+                                    TvSurfaceDeep.copy(alpha = 0.95f)
+                                )
+                            )
+                        )
+                        .border(1.2.dp, EmeraldAccentBorder, RoundedCornerShape(16.dp))
+                        .padding(horizontal = 22.dp, vertical = 11.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.VolumeOff, contentDescription = "Silent HP", tint = SleekAmber400, modifier = Modifier.size(24.dp))
-                    Text("Matikan / Senyapkan Nada Dering HP", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = TextWhite)
+                    Icon(
+                        Icons.AutoMirrored.Filled.VolumeOff,
+                        contentDescription = "Silent HP",
+                        tint = AccentGoldVibrant,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Text(
+                        text = "Matikan / Senyapkan Nada Dering HP",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimaryHigh
+                    )
                 }
 
                 Row(
                     modifier = Modifier
                         .clip(RoundedCornerShape(16.dp))
-                        .background(Color(0x1AFFFFFF))
-                        .border(1.dp, Color(0x3334D399), RoundedCornerShape(16.dp))
-                        .padding(horizontal = 20.dp, vertical = 10.dp),
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(
+                                    TvSurfaceElevated.copy(alpha = 0.90f),
+                                    TvSurfaceDeep.copy(alpha = 0.95f)
+                                )
+                            )
+                        )
+                        .border(1.2.dp, EmeraldAccentBorder, RoundedCornerShape(16.dp))
+                        .padding(horizontal = 22.dp, vertical = 11.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Icon(Icons.Default.NotificationsActive, contentDescription = "Shaf", tint = SleekAmber400, modifier = Modifier.size(24.dp))
+                    Icon(
+                        Icons.Default.NotificationsActive,
+                        contentDescription = "Shaf",
+                        tint = EmeraldAccentGlow,
+                        modifier = Modifier.size(24.dp)
+                    )
                     Text(
                         text = if (isHariRaya) "Luruskan dan Rapatkan Shaf Sholat Ied" else "Luruskan dan Rapatkan Shaf Sholat",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
-                        color = TextWhite
+                        color = TextPrimaryHigh
                     )
                 }
             }
@@ -782,9 +955,9 @@ fun IqomahOverlay(
     }
 }
 
-// ----------------------------------------------------
-// 3. SHOLAT SILENT (DIMMED / HENING) OVERLAY
-// ----------------------------------------------------
+// -------------------------------------------------------------------------
+// 3. SHOLAT SILENT (DIMMED / HENING) OVERLAY (SOLEMN OLED BLACK — UI/UX PRO MAX)
+// -------------------------------------------------------------------------
 @Composable
 fun SholatSilentOverlay(
     prayerName: PrayerName = PrayerName.DZUHUR,
@@ -811,7 +984,7 @@ fun SholatSilentOverlay(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFF02120E))
+            .background(Color(0xFF000000)) // True OLED Black to protect prayer reverence
             .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -823,7 +996,12 @@ fun SholatSilentOverlay(
                 .clip(CircleShape)
                 .background(Color(0x1AFFFFFF))
         ) {
-            Icon(Icons.Default.Close, contentDescription = "Tutup", tint = Color(0x66FFFFFF), modifier = Modifier.size(24.dp))
+            Icon(
+                Icons.Default.Close,
+                contentDescription = "Tutup",
+                tint = Color(0x66FFFFFF),
+                modifier = Modifier.size(24.dp)
+            )
         }
 
         Column(
@@ -831,18 +1009,30 @@ fun SholatSilentOverlay(
             verticalArrangement = Arrangement.Center,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                text = if (isHariRaya) "$prayerTitle & KHUTBAH SEDANG BERLANGSUNG" else "SHOLAT $prayerTitle BERJAMAAH SEDANG BERLANGSUNG",
-                fontSize = 30.sp,
-                fontWeight = FontWeight.Black,
-                color = SleekEmerald400,
-                letterSpacing = 1.5.sp,
-                textAlign = TextAlign.Center
-            )
+            // Soft glowing pulse status
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .clip(CircleShape)
+                        .background(EmeraldAccentGlow)
+                )
+                Text(
+                    text = if (isHariRaya) "$prayerTitle & KHUTBAH SEDANG BERLANGSUNG" else "SHOLAT $prayerTitle BERJAMAAH SEDANG BERLANGSUNG",
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = EmeraldAccentGlow,
+                    letterSpacing = 1.5.sp,
+                    textAlign = TextAlign.Center
+                )
+            }
 
             // Tampilkan semua petugas (Khotib, Imam, Bilal) untuk Jumat & Hari Raya
             if (imamName.isNotBlank() || khotibName.isNotBlank()) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(10.dp))
                 PrayerOfficersBadges(
                     imamName = imamName,
                     muadzinName = "",
@@ -853,43 +1043,47 @@ fun SholatSilentOverlay(
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
+            // Majestic Arabic Calligraphy (Reverent Gold)
             Text(
                 text = if (isHariRaya || isFridayDzuhur) "سَوُّوا صُفُوفَكُمْ وَاسْتَمِعُوا لِلْخُطْبَةِ رَحِمَكُمُ اللهُ" else "سَوُّوا صُفُوفَكُمْ فَإِنَّ تَسْوِيَةَ الصُّفُوفِ مِنْ إِقَامَةِ الصَّلَاةِ",
-                fontSize = 34.sp,
+                fontSize = 38.sp,
+                lineHeight = 50.sp,
                 fontWeight = FontWeight.Bold,
-                color = SleekAmber300,
+                fontFamily = FontFamily.Serif,
+                color = AccentGoldPrimary.copy(alpha = 0.95f),
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             Text(
                 text = when {
                     isHariRaya -> "“Luruskan shaf, dirikan sholat dan dengarkan khutbah dengan khusyuk serta seksama.”"
                     isFridayDzuhur -> "“Luruskan shaf, dengarkan khutbah Jum'at dan dirikan sholat dengan khusyuk serta seksama.”"
-                    else -> "“Luruskan shaf-shaf kalian, karena meluruskan shaf adalah bagian dari kesempurnaan sholat.”"
+                    else -> "“Luruskan shaf-shaf kalian, karena meluruskan shaf adalah bagian dari kesempurnaan sholat.” (HR. Bukhari & Muslim)"
                 },
                 fontSize = 17.sp,
-                fontWeight = FontWeight.Medium,
-                color = TextWhiteMuted,
+                fontWeight = FontWeight.Normal,
+                color = TextSecondaryMedium,
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
+            // Subtle Dimmed Pill
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(Color(0x1AFFFFFF))
-                    .border(0.5.dp, Color(0x1AFFFFFF), RoundedCornerShape(20.dp))
+                    .clip(RoundedCornerShape(50.dp))
+                    .background(Color(0x14FFFFFF))
+                    .border(0.5.dp, Color(0x1AFFFFFF), RoundedCornerShape(50.dp))
                     .padding(horizontal = 24.dp, vertical = 7.dp)
             ) {
                 Text(
-                    text = "Mode Layar Hening ($timeFormatted)",
-                    fontSize = 14.sp,
-                    color = SleekEmerald300.copy(alpha = 0.8f),
+                    text = "Mode Layar Hening ($timeFormatted) • Layar akan kembali aktif seusai sholat",
+                    fontSize = 13.5.sp,
+                    color = TextMutedLow,
                     fontFamily = FontFamily.Monospace
                 )
             }
@@ -897,9 +1091,9 @@ fun SholatSilentOverlay(
     }
 }
 
-// ----------------------------------------------------
-// 5. FULLSCREEN VIDEO OVERLAY (PENAYANGAN VIDEO LOKAL)
-// ----------------------------------------------------
+// -------------------------------------------------------------------------
+// 5. FULLSCREEN VIDEO OVERLAY (PENAYANGAN VIDEO LOKAL — UI/UX PRO MAX)
+// -------------------------------------------------------------------------
 @Composable
 fun FullscreenVideoOverlay(
     videoPath: String,
@@ -923,51 +1117,55 @@ fun FullscreenVideoOverlay(
             onError = onDismiss
         )
 
-        // Subtle Top Bar Info
+        // Subtle Top Bar Info (Glass Gradient)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(Color.Black.copy(alpha = 0.75f), Color.Transparent)
+                        colors = listOf(Color.Black.copy(alpha = 0.85f), Color.Transparent)
                     )
                 )
-                .padding(horizontal = 24.dp, vertical = 14.dp),
+                .padding(horizontal = 24.dp, vertical = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(Color(0xFFEF4444))
-                        .padding(horizontal = 10.dp, vertical = 3.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(
+                            Brush.horizontalGradient(listOf(Color(0xFFEF4444), Color(0xFFDC2626)))
+                        )
+                        .padding(horizontal = 12.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = "▶ TAYANGAN VIDEO",
+                        text = "▶ TAYANGAN VIDEO MASJID",
                         color = Color.White,
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 0.5.sp
                     )
                 }
 
                 Text(
-                    text = title.ifBlank { "Video Dokumentasi Masjid" },
-                    color = Color.White,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold
+                    text = title.ifBlank { "Dokumentasi & Kajian Masjid" },
+                    color = TextPrimaryHigh,
+                    fontSize = 16.5.sp,
+                    fontWeight = FontWeight.Bold
                 )
             }
 
             IconButton(
                 onClick = onDismiss,
                 modifier = Modifier
-                    .size(36.dp)
+                    .size(40.dp)
                     .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.5f))
+                    .background(Color.Black.copy(alpha = 0.6f))
+                    .border(1.dp, Color(0x33FFFFFF), CircleShape)
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,
@@ -980,9 +1178,9 @@ fun FullscreenVideoOverlay(
     }
 }
 
-// ----------------------------------------------------
-// 8. FULLSCREEN CCTV / IP CAMERA LIVE OVERLAY
-// ----------------------------------------------------
+// -------------------------------------------------------------------------
+// 8. FULLSCREEN CCTV / IP CAMERA LIVE OVERLAY (UI/UX PRO MAX)
+// -------------------------------------------------------------------------
 @Composable
 fun FullscreenCctvOverlay(
     cctvUrl: String,
@@ -1022,22 +1220,22 @@ fun FullscreenCctvOverlay(
                 .align(Alignment.TopCenter)
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(Color.Black.copy(alpha = 0.85f), Color.Transparent)
+                        colors = listOf(Color.Black.copy(alpha = 0.88f), Color.Transparent)
                     )
                 )
-                .padding(horizontal = 24.dp, vertical = 14.dp),
+                .padding(horizontal = 24.dp, vertical = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
+                        .clip(RoundedCornerShape(8.dp))
                         .background(Color(0xFFDC2626))
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                        .padding(horizontal = 12.dp, vertical = 5.dp)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -1053,7 +1251,8 @@ fun FullscreenCctvOverlay(
                             text = "LIVE CCTV MASJID",
                             color = Color.White,
                             fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 0.5.sp
                         )
                     }
                 }
@@ -1061,22 +1260,24 @@ fun FullscreenCctvOverlay(
                 val currentCamName = cameras.firstOrNull { it.id == activeCameraId }?.name ?: title
                 Text(
                     text = if (displayLayout != "SINGLE" && cameras.size > 1) "Multi-Kamera CCTV ($displayLayout)" else currentCamName.ifBlank { "Siaran Langsung CCTV Masjid" },
-                    color = Color.White,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold
+                    color = TextPrimaryHigh,
+                    fontSize = 16.5.sp,
+                    fontWeight = FontWeight.Bold
                 )
 
                 if (isMuted) {
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
+                            .clip(RoundedCornerShape(6.dp))
                             .background(Color.Black.copy(alpha = 0.5f))
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                            .border(0.5.dp, Color(0x33FFFFFF), RoundedCornerShape(6.dp))
+                            .padding(horizontal = 8.dp, vertical = 3.dp)
                     ) {
                         Text(
                             text = "🔇 Audio Senyap",
                             color = Color(0xFFCBD5E1),
-                            fontSize = 11.sp
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Medium
                         )
                     }
                 }
@@ -1085,9 +1286,10 @@ fun FullscreenCctvOverlay(
             IconButton(
                 onClick = onDismiss,
                 modifier = Modifier
-                    .size(36.dp)
+                    .size(40.dp)
                     .clip(CircleShape)
                     .background(Color.Black.copy(alpha = 0.6f))
+                    .border(1.dp, Color(0x33FFFFFF), CircleShape)
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,
@@ -1099,5 +1301,3 @@ fun FullscreenCctvOverlay(
         }
     }
 }
-
-

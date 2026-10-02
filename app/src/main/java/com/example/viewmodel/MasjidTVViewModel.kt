@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
+import com.example.util.PrayerFlowPolicy
 import java.util.Calendar
 import java.util.TimeZone
 
@@ -100,6 +101,12 @@ class MasjidTVViewModel(application: Application) : AndroidViewModel(application
     private var lastTriggeredMurottalMinute = -1
     private var lastTriggeredMurottalPrayer: PrayerName? = null
 
+    // Cache prayer calculation to prevent redundant daily astronomical math every second
+    private var cachedPrayerSchedule: PrayerSchedule? = null
+    private var cachedDayOfYear = -1
+    private var cachedYear = -1
+    private var cachedConfig: MosqueConfig? = null
+
     init {
         val ip = NetworkUtils.getLocalIpAddress(application)
         val url = "http://$ip:8080"
@@ -129,10 +136,11 @@ class MasjidTVViewModel(application: Application) : AndroidViewModel(application
                         "preadhan_friday" -> triggerPreAdhanManual(PrayerName.DZUHUR, 30, forceFriday = true)
                         "adhan" -> triggerAdhanManual(PrayerName.DZUHUR, forceFriday = false)
                         "adhan_friday" -> triggerAdhanManual(PrayerName.DZUHUR, forceFriday = true)
-                        "iqomah" -> triggerIqomahManual(PrayerName.DZUHUR, 10, forceFriday = false)
-                        "iqomah_friday" -> triggerIqomahManual(PrayerName.DZUHUR, 10, forceFriday = true)
-                        "sholat" -> triggerSholatSilentManual(10, forceFriday = false)
-                        "sholat_friday" -> triggerSholatSilentManual(10, forceFriday = true)
+                        "khutbah" -> triggerKhutbahManual()
+                        "iqomah" -> triggerIqomahManual(_uiState.value.adhanPrayerName, PrayerFlowPolicy.iqomahMinutes(_uiState.value.adhanPrayerName, false, _uiState.value.config), forceFriday = false)
+                        "iqomah_friday" -> triggerIqomahManual(PrayerName.DZUHUR, _uiState.value.config.iqomahJumat, forceFriday = true)
+                        "sholat" -> triggerSholatSilentManual(_uiState.value.config.sholatDurationMinutes, forceFriday = false)
+                        "sholat_friday" -> triggerSholatSilentManual(_uiState.value.config.sholatDurationMinutes, forceFriday = true)
                         "play_murottal" -> playMurottalManual()
                         "stop_murottal" -> stopMurottalManual()
                         "idul_fitri_sim" -> triggerIdulFitriManual()
@@ -264,30 +272,33 @@ class MasjidTVViewModel(application: Application) : AndroidViewModel(application
         clockJob?.cancel()
         clockJob = viewModelScope.launch {
             while (isActive) {
-                val cal = Calendar.getInstance(TimeZone.getDefault())
+                val zone = java.util.SimpleTimeZone((_uiState.value.config.timezone * 3_600_000).toInt(), "Masjid")
+                val cal = Calendar.getInstance(zone)
                 val hour = cal.get(Calendar.HOUR_OF_DAY)
                 val min = cal.get(Calendar.MINUTE)
                 val sec = cal.get(Calendar.SECOND)
                 val timeStr = String.format(java.util.Locale.getDefault(), "%02d:%02d", hour, min)
                 val secStr = String.format(java.util.Locale.getDefault(), "%02d", sec)
 
+                val config = _uiState.value.config
+                val schedule = getOrCalculatePrayerSchedule(cal, config)
+                val nextInfo = PrayerCalculator.getNextPrayerInfo(cal, schedule, config)
+
                 _uiState.update { current ->
                     current.copy(
                         currentCalendar = cal,
                         currentTimeString = timeStr,
                         currentSecondsString = secStr,
-                        isBlinkColon = sec % 2 == 0
+                        isBlinkColon = sec % 2 == 0,
+                        prayerSchedule = schedule,
+                        nextPrayerInfo = nextInfo
                     )
                 }
 
-                updatePrayerCalculation()
-
                 // Check automatic Pre-Adhan Countdown & Adhan arrival
-                val schedule = _uiState.value.prayerSchedule
-                val config = _uiState.value.config
                 val currentMinuteTotal = hour * 60 + min
                 val currentSecsTotal = hour * 3600 + min * 60 + sec
-                val todayDateStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(cal.time)
+                val todayDateStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).apply { timeZone = cal.timeZone }.format(cal.time)
 
                 if (schedule != null) {
                     fun parseSeconds(timeStr: String): Int {
@@ -420,7 +431,8 @@ class MasjidTVViewModel(application: Application) : AndroidViewModel(application
                     checkAndTriggerWhatsAppReminders(cal, config, todayDateStr)
                 }
 
-                delay(1000)
+                val delayMs = 1000L - (System.currentTimeMillis() % 1000L)
+                delay(delayMs.coerceIn(100L, 1000L))
             }
         }
     }
@@ -544,10 +556,40 @@ class MasjidTVViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    private fun getOrCalculatePrayerSchedule(cal: Calendar, config: MosqueConfig): PrayerSchedule {
+        val currentDay = cal.get(Calendar.DAY_OF_YEAR)
+        val currentYear = cal.get(Calendar.YEAR)
+        val isConfigSame = cachedConfig?.latitude == config.latitude &&
+                cachedConfig?.longitude == config.longitude &&
+                cachedConfig?.timezone == config.timezone &&
+                cachedConfig?.calculationMethod == config.calculationMethod &&
+                cachedConfig?.offsetSubuh == config.offsetSubuh &&
+                cachedConfig?.offsetDzuhur == config.offsetDzuhur &&
+                cachedConfig?.offsetAshar == config.offsetAshar &&
+                cachedConfig?.offsetMaghrib == config.offsetMaghrib &&
+                cachedConfig?.offsetIsya == config.offsetIsya &&
+                cachedConfig?.offsetImsak == config.offsetImsak &&
+                cachedConfig?.offsetTerbit == config.offsetTerbit &&
+                cachedConfig?.offsetDhuha == config.offsetDhuha &&
+                cachedConfig?.hijriAdjustmentDays == config.hijriAdjustmentDays
+
+        val cached = cachedPrayerSchedule
+        if (cached != null && currentDay == cachedDayOfYear && currentYear == cachedYear && isConfigSame) {
+            return cached
+        }
+
+        val newSchedule = PrayerCalculator.calculatePrayerTimes(cal, config)
+        cachedPrayerSchedule = newSchedule
+        cachedDayOfYear = currentDay
+        cachedYear = currentYear
+        cachedConfig = config.copy()
+        return newSchedule
+    }
+
     private fun updatePrayerCalculation() {
         val cal = _uiState.value.currentCalendar
         val config = _uiState.value.config
-        val schedule = PrayerCalculator.calculatePrayerTimes(cal, config)
+        val schedule = getOrCalculatePrayerSchedule(cal, config)
         val nextInfo = PrayerCalculator.getNextPrayerInfo(cal, schedule, config)
 
         _uiState.update {
@@ -647,7 +689,7 @@ class MasjidTVViewModel(application: Application) : AndroidViewModel(application
         countdownModeJob?.cancel()
         MurottalAudioPlayer.stop()
         countdownModeJob = viewModelScope.launch {
-            // 1. Play Adhan Arrival Chime & Show Adhan Screen for 30 seconds
+            // 1. Show adhan for the administrator-configured duration
             if (config.soundAlertEnabled) {
                 BuzzerSoundPlayer.playAdhanArrivalChime(viewModelScope)
             }
@@ -664,20 +706,14 @@ class MasjidTVViewModel(application: Application) : AndroidViewModel(application
                     hariRayaEventTitle = officers.eventTitle
                 )
             }
-            delay(30_000) // 30 seconds adhan splash
+            delay(config.adhanDurationSeconds.coerceIn(10, 900) * 1000L)
+            val fridayPrayer = _uiState.value.isFridayPrayer && prayer == PrayerName.DZUHUR
+            if (PrayerFlowPolicy.afterAdhan(prayer, fridayPrayer, config) == TVDisplayMode.KHUTBAH_FOCUS) {
+                awaitKhutbah(config)
+            }
 
             // 2. Iqomah Countdown
-            val isFriday = Calendar.getInstance().get(Calendar.DAY_OF_WEEK) == Calendar.FRIDAY
-            val iqomahMinutes = when (prayer) {
-                PrayerName.SUBUH -> config.iqomahSubuh
-                PrayerName.DZUHUR -> if (isFriday && config.showFridayOfficers) config.iqomahJumat else config.iqomahDzuhur
-                PrayerName.ASHAR -> config.iqomahAshar
-                PrayerName.MAGHRIB -> config.iqomahMaghrib
-                PrayerName.ISYA -> config.iqomahIsya
-                PrayerName.IDUL_FITRI -> config.idulFitriIqomahMinutes
-                PrayerName.IDUL_ADHA -> config.idulAdhaIqomahMinutes
-                else -> 10
-            }
+            val iqomahMinutes = PrayerFlowPolicy.iqomahMinutes(prayer, fridayPrayer, config)
             var iqomahSeconds = iqomahMinutes * 60
             _uiState.update {
                 it.copy(
@@ -765,7 +801,7 @@ class MasjidTVViewModel(application: Application) : AndroidViewModel(application
         MurottalAudioPlayer.stop()
         countdownModeJob = viewModelScope.launch {
             val cal = _uiState.value.currentCalendar
-            val todayDateStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(cal.time)
+            val todayDateStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).apply { timeZone = cal.timeZone }.format(cal.time)
             val config = _uiState.value.config
             val officers = repository.getActivePrayerOfficers(todayDateStr, PrayerName.IDUL_FITRI, false, config, _uiState.value.fridaySchedule)
             startPreAdhanCountdownFlow(PrayerName.IDUL_FITRI, 15, officers, config)
@@ -777,7 +813,7 @@ class MasjidTVViewModel(application: Application) : AndroidViewModel(application
         MurottalAudioPlayer.stop()
         countdownModeJob = viewModelScope.launch {
             val cal = _uiState.value.currentCalendar
-            val todayDateStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(cal.time)
+            val todayDateStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).apply { timeZone = cal.timeZone }.format(cal.time)
             val config = _uiState.value.config
             val officers = repository.getActivePrayerOfficers(todayDateStr, PrayerName.IDUL_ADHA, false, config, _uiState.value.fridaySchedule)
             startPreAdhanCountdownFlow(PrayerName.IDUL_ADHA, 15, officers, config)
@@ -813,7 +849,7 @@ class MasjidTVViewModel(application: Application) : AndroidViewModel(application
         countdownModeJob = viewModelScope.launch {
             val cal = _uiState.value.currentCalendar
             val isFriday = forceFriday || cal.get(Calendar.DAY_OF_WEEK) == Calendar.FRIDAY
-            val todayDateStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(cal.time)
+            val todayDateStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).apply { timeZone = cal.timeZone }.format(cal.time)
             val officers = repository.getActivePrayerOfficers(todayDateStr, prayer, isFriday, _uiState.value.config, _uiState.value.fridaySchedule)
             startPreAdhanCountdownFlow(prayer, durationSeconds, officers, _uiState.value.config)
         }
@@ -824,24 +860,23 @@ class MasjidTVViewModel(application: Application) : AndroidViewModel(application
         countdownModeJob = viewModelScope.launch {
             val cal = _uiState.value.currentCalendar
             val isFriday = forceFriday || cal.get(Calendar.DAY_OF_WEEK) == Calendar.FRIDAY
-            val todayDateStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(cal.time)
+            val todayDateStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).apply { timeZone = cal.timeZone }.format(cal.time)
             val officers = repository.getActivePrayerOfficers(todayDateStr, prayer, isFriday, _uiState.value.config, _uiState.value.fridaySchedule)
-            if (_uiState.value.config.soundAlertEnabled) {
-                BuzzerSoundPlayer.playAdhanArrivalChime(viewModelScope)
-            }
-            _uiState.update {
-                it.copy(
-                    displayMode = TVDisplayMode.ADHAN,
-                    adhanPrayerName = prayer,
-                    activeImamName = officers.imam,
-                    activeMuadzinName = officers.muadzin,
-                    activeKhotibName = officers.khotib,
-                    activeBilalName = officers.bilal,
-                    isFridayPrayer = officers.isFriday,
-                    isHariRaya = officers.isHariRaya,
-                    hariRayaEventTitle = officers.eventTitle
-                )
-            }
+            viewModelScope.launch { startAutomaticAdhanFlow(prayer, officers, _uiState.value.config) }
+        }
+    }
+
+    private suspend fun awaitKhutbah(config: MosqueConfig) {
+        MurottalAudioPlayer.stop()
+        _uiState.update { it.copy(displayMode = TVDisplayMode.KHUTBAH_FOCUS, adhanPrayerName = PrayerName.DZUHUR, isFridayPrayer = true) }
+        PrayerFlowPolicy.waitForKhutbahEnd(config)
+    }
+
+    fun triggerKhutbahManual() {
+        countdownModeJob?.cancel()
+        countdownModeJob = viewModelScope.launch {
+            awaitKhutbah(_uiState.value.config)
+            viewModelScope.launch { triggerIqomahManual(PrayerName.DZUHUR, _uiState.value.config.iqomahJumat, true) }
         }
     }
 
@@ -850,9 +885,10 @@ class MasjidTVViewModel(application: Application) : AndroidViewModel(application
         countdownModeJob = viewModelScope.launch {
             val cal = _uiState.value.currentCalendar
             val isFriday = forceFriday || cal.get(Calendar.DAY_OF_WEEK) == Calendar.FRIDAY
-            val todayDateStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(cal.time)
+            val todayDateStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).apply { timeZone = cal.timeZone }.format(cal.time)
             val officers = repository.getActivePrayerOfficers(todayDateStr, prayer, isFriday, _uiState.value.config, _uiState.value.fridaySchedule)
-            var secs = durationMinutes * 60
+            MurottalAudioPlayer.stop()
+            var secs = durationMinutes.coerceIn(0, 120) * 60
             _uiState.update {
                 it.copy(
                     displayMode = TVDisplayMode.IQOMAH_COUNTDOWN,
@@ -869,12 +905,13 @@ class MasjidTVViewModel(application: Application) : AndroidViewModel(application
                 delay(1000)
                 secs--
                 _uiState.update { it.copy(iqomahRemainingSeconds = secs) }
-                if (secs in 1..5) {
+                if (secs in 1..5 && _uiState.value.config.soundAlertEnabled) {
                     BuzzerSoundPlayer.playCountdownBeep(false)
                 }
             }
-            BuzzerSoundPlayer.playCountdownBeep(true)
-            triggerSholatSilentManual(1, forceFriday)
+            if (_uiState.value.config.soundAlertEnabled) BuzzerSoundPlayer.playCountdownBeep(true)
+            // Launch the next stage after this countdown coroutine returns; do not cancel it mid-transition.
+            viewModelScope.launch { triggerSholatSilentManual(_uiState.value.config.sholatDurationMinutes, forceFriday) }
         }
     }
 
@@ -883,12 +920,15 @@ class MasjidTVViewModel(application: Application) : AndroidViewModel(application
         countdownModeJob = viewModelScope.launch {
             val cal = _uiState.value.currentCalendar
             val isFriday = forceFriday || cal.get(Calendar.DAY_OF_WEEK) == Calendar.FRIDAY
-            val todayDateStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(cal.time)
-            val officers = repository.getActivePrayerOfficers(todayDateStr, _uiState.value.adhanPrayerName, isFriday, _uiState.value.config, _uiState.value.fridaySchedule)
-            var secs = durationMinutes * 60
+            val todayDateStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).apply { timeZone = cal.timeZone }.format(cal.time)
+            val prayer = PrayerFlowPolicy.manualPrayer(_uiState.value.adhanPrayerName, forceFriday)
+            val officers = repository.getActivePrayerOfficers(todayDateStr, prayer, isFriday, _uiState.value.config, _uiState.value.fridaySchedule)
+            MurottalAudioPlayer.stop()
+            var secs = durationMinutes.coerceIn(3, 120) * 60
             _uiState.update {
                 it.copy(
                     displayMode = TVDisplayMode.SHOLAT_SILENT,
+                    adhanPrayerName = prayer,
                     sholatSilentRemainingSeconds = secs,
                     activeImamName = officers.imam,
                     activeMuadzinName = officers.muadzin,
@@ -981,6 +1021,7 @@ class MasjidTVViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun playMurottalManual(presetId: String? = null, filePath: String? = null, qari: String? = null, surah: String? = null) {
+        if (PrayerFlowPolicy.hidesInformation(_uiState.value.displayMode)) return
         val config = _uiState.value.config
         if (!filePath.isNullOrBlank()) {
             MurottalAudioPlayer.playFile(

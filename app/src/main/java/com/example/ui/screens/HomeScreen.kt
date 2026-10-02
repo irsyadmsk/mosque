@@ -33,6 +33,10 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    androidx.activity.compose.BackHandler(enabled = com.example.util.PrayerFlowPolicy.hidesInformation(uiState.displayMode)) {
+        viewModel.resetToNormalMode()
+    }
+
     Scaffold(
         containerColor = Color.Black,
         contentWindowInsets = WindowInsets(0.dp)
@@ -42,6 +46,7 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
+            if (!com.example.util.PrayerFlowPolicy.hidesInformation(uiState.displayMode)) {
             // Main TV Screen Display
             IslamicBackground(
                 activeTheme = uiState.config.activeTheme,
@@ -52,11 +57,13 @@ fun HomeScreen(
                 customBackgroundDim = uiState.config.customBackgroundDim,
                 backgroundCctvUrl = uiState.config.getBackgroundCctvUrl()
             ) {
-                if (uiState.config.displayLayoutModel == "MIHRAB_GRAND_ROYAL") {
+                if (uiState.config.displayLayoutModel == "CUSTOMIZABLE_BOARD") {
+                    EditableBoard(uiState, onOpenSettings = { viewModel.toggleSettingsDialog(true) }, onSelectSlide = { viewModel.setCarouselSlide(it) })
+                } else if (uiState.config.displayLayoutModel == "MIHRAB_GRAND_ROYAL") {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                            .padding(horizontal = 14.dp, vertical = 8.dp),
                         verticalArrangement = Arrangement.SpaceBetween
                     ) {
                         Box(modifier = Modifier.weight(1f)) {
@@ -79,7 +86,7 @@ fun HomeScreen(
                                 onOpenSettings = { viewModel.toggleSettingsDialog(true) }
                             )
                         }
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
                         RunningTextTicker(
                             runningTexts = uiState.activeRunningTexts,
                             fontSize = uiState.config.runningTextFontSize
@@ -89,7 +96,7 @@ fun HomeScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                            .padding(horizontal = 14.dp, vertical = 8.dp),
                         verticalArrangement = Arrangement.SpaceBetween
                     ) {
                         Box(modifier = Modifier.weight(1f)) {
@@ -112,7 +119,7 @@ fun HomeScreen(
                                 onOpenSettings = { viewModel.toggleSettingsDialog(true) }
                             )
                         }
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
                         RunningTextTicker(
                             runningTexts = uiState.activeRunningTexts,
                             fontSize = uiState.config.runningTextFontSize
@@ -122,7 +129,7 @@ fun HomeScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                            .padding(horizontal = 14.dp, vertical = 8.dp),
                         verticalArrangement = Arrangement.SpaceBetween
                     ) {
                         // 1. Top Area: Separated Header Bar & Standalone Digital Clock Card
@@ -303,7 +310,7 @@ fun HomeScreen(
                                     activeTarawihNight = uiState.activeTarawihNight
                                 )
                             }
-                            Spacer(modifier = Modifier.height(4.dp))
+                            Spacer(modifier = Modifier.height(6.dp))
                             PrayerTimesBar(
                                 schedule = uiState.prayerSchedule,
                                 nextPrayerInfo = uiState.nextPrayerInfo,
@@ -312,7 +319,7 @@ fun HomeScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
                     // 4. Bottom Running Text / Marquee Ticker
                     RunningTextTicker(
@@ -322,6 +329,8 @@ fun HomeScreen(
                 }
             }
         }
+
+            }
 
             val isFridayNow = uiState.isFridayPrayer || (uiState.currentCalendar.get(Calendar.DAY_OF_WEEK) == Calendar.FRIDAY && uiState.adhanPrayerName == PrayerName.DZUHUR)
 
@@ -378,18 +387,23 @@ fun HomeScreen(
             }
 
             AnimatedVisibility(
+                visible = uiState.displayMode == TVDisplayMode.KHUTBAH_FOCUS,
+                enter = fadeIn(), exit = fadeOut()
+            ) {
+                PrayerFocusOverlay(true, uiState.config.focusBlankScreen,
+                    uiState.config.focusShowClock, uiState.currentTimeString)
+            }
+
+            AnimatedVisibility(
                 visible = uiState.displayMode == TVDisplayMode.SHOLAT_SILENT,
                 enter = fadeIn(),
                 exit = fadeOut()
             ) {
-                SholatSilentOverlay(
-                    prayerName = uiState.adhanPrayerName,
-                    remainingSeconds = uiState.sholatSilentRemainingSeconds,
-                    imamName = uiState.activeImamName,
-                    khotibName = uiState.activeKhotibName,
-                    bilalName = uiState.activeBilalName,
-                    isFriday = isFridayNow,
-                    onDismiss = { viewModel.resetToNormalMode() }
+                PrayerFocusOverlay(
+                    khutbah = false,
+                    blank = uiState.config.focusBlankScreen,
+                    showClock = uiState.config.focusShowClock,
+                    time = uiState.currentTimeString
                 )
             }
 

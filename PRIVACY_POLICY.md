@@ -2,8 +2,8 @@
 
 **Terakhir Diperbarui:** 30 Agustus 2026  
 **Aplikasi:** MasjidKU TV  
-**Pengembang:** DKM Digital Signage / Tim Pengembang MasjidKU  
-**Kontak:** support@masjidku.id / dkm@masjidku.id  
+**Pengembang:** Muhammad Irsyad Sirojul Khoeir (irsyads.com)  
+**Kontak:** https://irsyads.com  
 
 ---
 
@@ -71,8 +71,8 @@ Kami dapat memperbarui Kebijakan Privasi ini dari waktu ke waktu jika terdapat p
 
 ## 8. Kontak Kami
 Jika Anda memiliki pertanyaan, saran, atau kendala terkait privasi aplikasi MasjidKU TV, silakan hubungi tim kami melalui:
-- **Email:** support@masjidku.id / pengembang@masjidku.id
-- **Situs Web:** https://masjidku.id
+- **Email:** https://irsyads.com
+- **Situs Web:** https://irsyads.com
 
 ---
 
@@ -80,7 +80,7 @@ Jika Anda memiliki pertanyaan, saran, atau kendala terkait privasi aplikasi Masj
 
 **Effective Date:** August 30, 2026  
 **Application:** MasjidKU TV  
-**Developer:** DKM Digital Signage / MasjidKU Team  
+**Developer:** Muhammad Irsyad Sirojul Khoeir (irsyads.com)  
 
 ### Overview
 MasjidKU TV respects the privacy of all users and mosque congregations. This application operates under a strict **Zero Tracking & Local Storage** policy.
@@ -94,4 +94,4 @@ MasjidKU TV respects the privacy of all users and mosque congregations. This app
    - `WAKE_LOCK`: To maintain the display active during mosque operating hours.
 5. **No Third-Party Advertising or Tracking**: MasjidKU TV contains zero ads, zero analytics trackers, and zero behavioral monitoring tools.
 
-For any inquiries, please contact us at **support@masjidku.id**.
+For any inquiries, please contact us at **https://irsyads.com**.

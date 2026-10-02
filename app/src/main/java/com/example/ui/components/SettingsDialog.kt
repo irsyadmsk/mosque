@@ -183,6 +183,8 @@ fun SettingsDialog(
                         }
                     }
 
+                    Text("Credit by Muhammad Irsyad Sirojul Khoeir (irsyads.com)", modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp), color = TextWhiteDim, fontSize = 10.sp)
+
                     // Content Area: Sidebar + Active Tab Content
                     Row(
                         modifier = Modifier
@@ -533,7 +535,7 @@ private fun TabMobileConnect(serverUrl: String, localIp: String, qrBitmap: Image
                         color = Color(0xFFA5D6A7)
                     )
                     Text(
-                        text = "🔑 $webAdminPassword",
+                        text = if (webAdminPassword == "123456") "PIN awal: 123456 — ganti lewat admin" else "PIN admin telah ditetapkan",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Black,
                         color = Color.White,

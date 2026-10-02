@@ -50,19 +50,18 @@ fun IslamicBackground(
         label = "glow"
     )
 
-    val customBitmap = remember(customBackgroundImagePath) {
-        if (customBackgroundImagePath.isNotBlank()) {
-            try {
-                val file = File(customBackgroundImagePath)
-                if (file.exists()) BitmapFactory.decodeFile(file.absolutePath)?.asImageBitmap() else null
-            } catch (_: Exception) {
-                null
-            }
+    val customBitmap = remember(backgroundType, bgPreset, customBackgroundImagePath) {
+        // Keep legacy uploads, but never let a previously uploaded image cover a newly selected preset.
+        if (backgroundType == "IMAGE" || (backgroundType == "PRESET" && bgPreset == BackgroundPresetHelper.CUSTOM_UPLOAD)) {
+            com.example.util.BitmapUtils.decodeSampledBitmapFromFile(customBackgroundImagePath, 1920, 1080)
         } else null
     }
 
     val presetDrawableRes = remember(bgPreset) {
         BackgroundPresetHelper.getDrawableResId(bgPreset)
+            ?: if (bgPreset == BackgroundPresetHelper.CUSTOM_UPLOAD) {
+                BackgroundPresetHelper.getDrawableResId(BackgroundPresetHelper.PRESET_EMERALD_MIHRAB)
+            } else null
     }
 
     val (bgGradient, accentColor, secondaryColor) = when (activeTheme) {

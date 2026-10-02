@@ -156,7 +156,7 @@ fun RtspCctvPlayerView(
                     // 1. Authentication failure (401 Unauthorized)
                     combined.contains("401") || combined.contains("unauthorized") ||
                     error.errorCode == PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS ->
-                        "Kamera butuh Username & Password (401 Unauthorized).\nPastikan URL berisi username:password (misal rtsp://user:pass@IP:554/...)"
+                        "Kamera butuh Username & Password (401 Unauthorized).\nPastikan URL berisi username:password (misal rtsp://username:password@192.168.1.100:554/...)"
 
                     // 2. Stream path not found (404 Not Found)
                     combined.contains("404") || combined.contains("not found") ->

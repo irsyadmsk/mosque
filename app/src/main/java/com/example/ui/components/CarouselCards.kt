@@ -197,12 +197,7 @@ fun CarouselContainer(
 @Composable
 private fun SlideMediaImage(slide: MediaSlide) {
     val bitmap = remember(slide.filePath) {
-        try {
-            val file = File(slide.filePath)
-            if (file.exists()) BitmapFactory.decodeFile(file.absolutePath)?.asImageBitmap() else null
-        } catch (_: Exception) {
-            null
-        }
+        com.example.util.BitmapUtils.decodeSampledBitmapFromFile(slide.filePath, 1920, 1080)
     }
 
     Box(
@@ -254,12 +249,7 @@ private fun SlideCanvasBackground(
     contentDescription: String = "Canvas"
 ) {
     val customBitmap = remember(customPath) {
-        if (customPath.isNotBlank()) {
-            try {
-                val f = File(customPath)
-                if (f.exists()) BitmapFactory.decodeFile(f.absolutePath)?.asImageBitmap() else null
-            } catch (_: Exception) { null }
-        } else null
+        com.example.util.BitmapUtils.decodeSampledBitmapFromFile(customPath, 1920, 1080)
     }
 
     val resId = remember(defaultPreset) {
@@ -603,8 +593,8 @@ private fun SlideFinancialReport(
     val effectiveBalance = if (balance != 0L) balance else effectiveIncome - effectiveExpense
 
     val bankName = if (config.bankName.isNotBlank() && config.bankName != "-") config.bankName else "Bank Syariah Indonesia (BSI)"
-    val bankAccount = if (config.bankAccount.isNotBlank() && config.bankAccount != "-") config.bankAccount else "7123-4567-8901"
-    val bankAccountName = if (config.bankAccountName.isNotBlank() && config.bankAccountName != "-") config.bankAccountName else "DKM Baitul Muttaqin"
+    val bankAccount = if (config.bankAccount.isNotBlank() && config.bankAccount != "-") config.bankAccount else "7123 4567 89"
+    val bankAccountName = if (config.bankAccountName.isNotBlank() && config.bankAccountName != "-") config.bankAccountName else "DKM MASJID ENDAN ANDANSIH"
 
     val displayFinances = finances.filter { it.amount > 0 }
 
@@ -2142,14 +2132,7 @@ private fun formatRupiahCarousel(amount: Long): String {
 @Composable
 private fun SlideQrisDonation(config: MosqueConfig) {
     val qrisBitmap = remember(config.qrisImagePath) {
-        if (config.qrisImagePath.isNotBlank()) {
-            try {
-                val f = File(config.qrisImagePath)
-                if (f.exists()) BitmapFactory.decodeFile(f.absolutePath)?.asImageBitmap() else null
-            } catch (_: Exception) {
-                null
-            }
-        } else null
+        com.example.util.BitmapUtils.decodeSampledBitmapFromFile(config.qrisImagePath, 1080, 1080)
     }
 
     val collected = config.donationCollectedAmount
@@ -2178,11 +2161,11 @@ private fun SlideQrisDonation(config: MosqueConfig) {
             // SISI KIRI: QRIS Code Box Putih Bersih
             Box(
                 modifier = Modifier
-                    .width(180.dp)
+                    .width(220.dp)
                     .fillMaxHeight()
-                    .clip(RoundedCornerShape(14.dp))
+                    .clip(RoundedCornerShape(16.dp))
                     .background(Color.White)
-                    .padding(8.dp),
+                    .padding(10.dp),
                 contentAlignment = Alignment.Center
             ) {
                 if (qrisBitmap != null) {

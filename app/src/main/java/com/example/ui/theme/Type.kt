@@ -48,20 +48,40 @@ val Typography =
         lineHeight = 24.sp,
         letterSpacing = 0.5.sp,
       )
-    /* Other default text styles to override
-    titleLarge = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Normal,
-        fontSize = 22.sp,
-        lineHeight = 28.sp,
-        letterSpacing = 0.sp
-    ),
-    labelSmall = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Medium,
-        fontSize = 11.sp,
-        lineHeight = 16.sp,
-        letterSpacing = 0.5.sp
-    )
-    */
   )
+
+// =========================================================================
+// UI/UX Pro Max — 10-Foot UI Standard Typography Scales (1080p Landscape)
+// =========================================================================
+val TvPrayerTimeStyle = TextStyle(
+    fontFamily = RajdhaniFont,
+    fontWeight = FontWeight.Bold,
+    fontSize = 30.sp,
+    letterSpacing = 0.5.sp
+)
+
+val TvPrayerTimeActiveStyle = TextStyle(
+    fontFamily = RajdhaniFont,
+    fontWeight = FontWeight.Bold,
+    fontSize = 33.sp,
+    letterSpacing = 0.5.sp
+)
+
+val TvPrayerNameStyle = TextStyle(
+    fontWeight = FontWeight.Black,
+    fontSize = 13.sp,
+    letterSpacing = 1.sp
+)
+
+val TvPrayerArabicStyle = TextStyle(
+    fontFamily = FontFamily.Serif,
+    fontWeight = FontWeight.Bold,
+    fontSize = 13.sp
+)
+
+val TvCountdownBadgeStyle = TextStyle(
+    fontFamily = OrbitronFont,
+    fontWeight = FontWeight.Bold,
+    fontSize = 12.5.sp,
+    letterSpacing = 0.5.sp
+)

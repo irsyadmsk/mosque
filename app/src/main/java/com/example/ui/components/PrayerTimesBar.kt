@@ -4,6 +4,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -78,8 +79,8 @@ fun PrayerTimesBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(68.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+            .height(102.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items.forEach { item ->
             PrayerCard(
@@ -143,54 +144,60 @@ fun PrayerTimesVerticalColumn(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(14.dp))
                     .background(
                         Brush.verticalGradient(
-                            listOf(Color(0xE6064E3B), Color(0xF5022C22))
+                            listOf(
+                                Color(0xF0064E3B),
+                                Color(0xFA022C22)
+                            )
                         )
                     )
                     .border(
                         1.5.dp,
-                        Brush.horizontalGradient(listOf(Color(0xFFFFE082), Color(0xFFF59E0B))),
-                        RoundedCornerShape(12.dp)
+                        Brush.horizontalGradient(
+                            listOf(AccentGoldPrimary, AccentGoldVibrant, AccentGoldPrimary)
+                        ),
+                        RoundedCornerShape(14.dp)
                     )
-                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
             ) {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(1.dp)
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(5.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Text(
-                            text = "●",
-                            color = SleekAmber400,
-                            fontSize = 8.sp
+                        Box(
+                            modifier = Modifier
+                                .size(7.dp)
+                                .clip(CircleShape)
+                                .background(AccentGoldVibrant)
                         )
                         Text(
                             text = "MENUJU $nextName",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = SleekAmber300,
-                            letterSpacing = 1.sp
+                            color = AccentGoldVibrant,
+                            letterSpacing = 1.2.sp
                         )
                     }
                     Text(
                         text = nextPrayerInfo.formattedCountdown,
-                        fontSize = 25.sp,
+                        fontSize = 26.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFFFE082),
+                        color = AccentGoldVibrant,
                         fontFamily = OrbitronFont,
-                        letterSpacing = 1.sp
+                        letterSpacing = 1.5.sp
                     )
                     Text(
                         text = "Masuk: ${nextPrayerInfo.timeStr} WIB",
-                        fontSize = 10.5.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFFA7F3D0)
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = TextSecondaryMedium
                     )
                 }
             }
@@ -283,16 +290,16 @@ private fun PrayerCard(
     }
 
     val cardBg = if (item.isNext) activeGradient else normalGradient
-    val borderColor = if (item.isNext) Color.White.copy(alpha = 0.4f * pulseBorder) else Color(0x1AFFFFFF)
-    val borderWidth = if (item.isNext) 1.5.dp else 1.dp
+    val borderColor = if (item.isNext) Color.White.copy(alpha = 0.55f * pulseBorder) else Color(0x3334D399)
+    val borderWidth = if (item.isNext) 1.8.dp else 1.dp
 
     Box(
         modifier = modifier
             .fillMaxHeight()
-            .clip(RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(14.dp))
             .background(cardBg)
-            .border(borderWidth, borderColor, RoundedCornerShape(10.dp))
-            .padding(horizontal = 4.dp, vertical = 2.dp),
+            .border(borderWidth, borderColor, RoundedCornerShape(14.dp))
+            .padding(horizontal = 6.dp, vertical = 6.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -300,47 +307,60 @@ private fun PrayerCard(
             verticalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier.fillMaxHeight()
         ) {
-            // Prayer Name
-            Text(
-                text = item.displayName,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Black,
-                color = if (item.isNext) activeTextColor else normalTitleColor,
-                letterSpacing = 0.5.sp
-            )
+            // 1. Prayer Name with Active Pill Indicator
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(if (item.isNext) activeTextColor.copy(alpha = 0.16f) else Color.Transparent)
+                    .padding(horizontal = 6.dp, vertical = 2.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    if (item.isNext) {
+                        Box(
+                            modifier = Modifier
+                                .size(5.5.dp)
+                                .clip(CircleShape)
+                                .background(activeTextColor)
+                        )
+                    }
+                    Text(
+                        text = item.displayName,
+                        style = TvPrayerNameStyle,
+                        color = if (item.isNext) activeTextColor else normalTitleColor
+                    )
+                }
+            }
 
-            // Prayer Time (Bolder, Larger, Islamic Contrast)
+            // 2. Prayer Time (High Contrast 10-foot TV Scale)
             Text(
                 text = item.time,
-                fontSize = if (item.isNext) 25.sp else 23.sp,
-                fontWeight = FontWeight.Bold,
-                color = if (item.isNext) activeTextColor else TextWhite,
-                fontFamily = RajdhaniFont,
-                letterSpacing = 0.5.sp
+                style = if (item.isNext) TvPrayerTimeActiveStyle else TvPrayerTimeStyle,
+                color = if (item.isNext) activeTextColor else TextPrimaryHigh
             )
 
-            // Bottom Subtext (Arabic or Live Countdown)
+            // 3. Bottom Subtext: Arabic Name or Dedicated Live Countdown Badge
             if (item.isNext && item.countdown != null) {
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(6.dp))
                         .background(activeTextColor.copy(alpha = 0.22f))
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                        .border(0.8.dp, activeTextColor.copy(alpha = 0.45f), RoundedCornerShape(6.dp))
+                        .padding(horizontal = 8.dp, vertical = 2.5.dp)
                 ) {
                     Text(
                         text = "-${item.countdown}",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = activeTextColor,
-                        fontFamily = OrbitronFont
+                        style = TvCountdownBadgeStyle,
+                        color = activeTextColor
                     )
                 }
             } else {
                 Text(
                     text = item.arabicName,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = if (item.isNext) activeTextColor.copy(alpha = 0.85f) else TextWhiteDim
+                    style = TvPrayerArabicStyle,
+                    color = if (item.isNext) activeTextColor.copy(alpha = 0.85f) else TextMutedLow
                 )
             }
         }
@@ -416,16 +436,16 @@ private fun PrayerVerticalCard(
     }
 
     val cardBg = if (item.isNext) activeGradient else normalGradient
-    val borderColor = if (item.isNext) Color.White.copy(alpha = 0.4f * pulseBorder) else Color(0x1AFFFFFF)
-    val borderWidth = if (item.isNext) 1.5.dp else 1.dp
+    val borderColor = if (item.isNext) Color.White.copy(alpha = 0.55f * pulseBorder) else Color(0x3334D399)
+    val borderWidth = if (item.isNext) 1.8.dp else 1.dp
 
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(cardBg)
-            .border(borderWidth, borderColor, RoundedCornerShape(10.dp))
-            .padding(horizontal = 10.dp, vertical = 4.dp),
+            .border(borderWidth, borderColor, RoundedCornerShape(12.dp))
+            .padding(horizontal = 12.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -435,30 +455,30 @@ private fun PrayerVerticalCard(
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 if (item.isNext) {
-                    Text("●", fontSize = 7.sp, color = activeTextColor)
+                    Box(
+                        modifier = Modifier
+                            .size(5.5.dp)
+                            .clip(CircleShape)
+                            .background(activeTextColor)
+                    )
                 }
                 Text(
                     text = item.displayName,
-                    fontSize = 13.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = if (item.isNext) activeTextColor else normalTitleColor,
-                    letterSpacing = 0.5.sp
+                    style = TvPrayerNameStyle,
+                    color = if (item.isNext) activeTextColor else normalTitleColor
                 )
             }
             Text(
                 text = item.arabicName,
-                fontSize = 10.sp,
-                color = if (item.isNext) activeTextColor.copy(alpha = 0.85f) else TextWhiteDim
+                style = TvPrayerArabicStyle,
+                color = if (item.isNext) activeTextColor.copy(alpha = 0.85f) else TextMutedLow
             )
         }
 
         Text(
             text = item.time,
-            fontSize = if (item.isNext) 22.sp else 20.sp,
-            fontWeight = FontWeight.Bold,
-            color = if (item.isNext) activeTextColor else TextWhite,
-            fontFamily = RajdhaniFont,
-            letterSpacing = 0.5.sp
+            style = if (item.isNext) TvPrayerTimeActiveStyle else TvPrayerTimeStyle,
+            color = if (item.isNext) activeTextColor else TextPrimaryHigh
         )
     }
 }

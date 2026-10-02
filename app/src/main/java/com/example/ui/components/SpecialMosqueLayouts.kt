@@ -1305,10 +1305,7 @@ private fun MihrabCenterColumnContent(
         }
         "FINANCE" -> {
             val qrisBitmap = remember(config.qrisImagePath) {
-                if (config.qrisImagePath.isNotBlank()) {
-                    val f = File(config.qrisImagePath)
-                    if (f.exists()) BitmapFactory.decodeFile(f.absolutePath)?.asImageBitmap() else null
-                } else null
+                com.example.util.BitmapUtils.decodeSampledBitmapFromFile(config.qrisImagePath, 512, 512)
             }
 
             Column(
@@ -1384,10 +1381,7 @@ private fun MihrabCenterColumnContent(
         }
         "QRIS" -> {
             val qrisBitmap = remember(config.qrisImagePath) {
-                if (config.qrisImagePath.isNotBlank()) {
-                    val f = File(config.qrisImagePath)
-                    if (f.exists()) BitmapFactory.decodeFile(f.absolutePath)?.asImageBitmap() else null
-                } else null
+                com.example.util.BitmapUtils.decodeSampledBitmapFromFile(config.qrisImagePath, 512, 512)
             }
             val collected = config.donationCollectedAmount
             val target = config.donationTargetAmount.coerceAtLeast(1L)
@@ -2248,10 +2242,7 @@ private fun CordobaGrandPanel(
                         val percentInt = (progress * 100).toInt()
 
                         val qrisBitmap = remember(config.qrisImagePath) {
-                            if (config.qrisImagePath.isNotBlank()) {
-                                val f = File(config.qrisImagePath)
-                                if (f.exists()) BitmapFactory.decodeFile(f.absolutePath)?.asImageBitmap() else null
-                            } else null
+                            com.example.util.BitmapUtils.decodeSampledBitmapFromFile(config.qrisImagePath, 512, 512)
                         }
 
                         Row(

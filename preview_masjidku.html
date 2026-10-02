@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MasjidKU TV — MASJID ENDAN ANDANSIH</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Orbitron:wght@500;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .font-rajdhani { font-family: 'Rajdhani', sans-serif; }
+    .font-orbitron { font-family: 'Orbitron', monospace; }
+    .font-amiri { font-family: 'Amiri', serif; }
+    
+    @keyframes ticker {
+      0% { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
+    }
+    .animate-marquee {
+      display: inline-block;
+      white-space: nowrap;
+      animation: ticker 40s linear infinite;
+    }
+    .animate-marquee:hover {
+      animation-play-state: paused;
+    }
+    
+    .tv-glass {
+      background: rgba(4, 56, 40, 0.65);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(251, 191, 36, 0.25);
+    }
+    .tv-card-active {
+      background: linear-gradient(180deg, #FBBF24 0%, #D97706 100%);
+      box-shadow: 0 0 25px rgba(245, 158, 11, 0.5);
+    }
+    .tv-card-normal {
+      background: linear-gradient(180deg, rgba(6, 78, 59, 0.8) 0%, rgba(2, 44, 34, 0.9) 100%);
+      border: 1px solid rgba(52, 211, 153, 0.3);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
+
+  <!-- TOP BAR / NAVIGATION CONTROLS -->
+  <header class="bg-slate-900 border-b border-emerald-900/60 px-4 py-3 sticky top-0 z-50 shadow-lg">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- Brand & Mode Title -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-amber-400 flex items-center justify-center font-bold text-slate-950 shadow-md">
+          🕌
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-extrabold text-base tracking-wide text-amber-300">MASJID ENDAN ANDANSIH</h1>
+            <span class="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded-full font-semibold">Purwakarta</span>
+            <span class="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full font-semibold">Pembaruan Tersinkron</span>
+          </div>
+          <p class="text-xs text-slate-400">Neglasari, Kec. Darangdan, Kabupaten Purwakarta, Jawa Barat</p>
+        </div>
+      </div>
+
+      <!-- View Selector Tabs -->
+      <div class="flex items-center bg-slate-950/80 p-1 rounded-xl border border-slate-800">
+        <button id="btnViewTv" onclick="switchView('tv')" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-emerald-600 text-white shadow-md flex items-center gap-1.5">
+          <span>📺</span> Layar TV Signage (1080p)
+        </button>
+        <button id="btnViewRemote" onclick="switchView('remote')" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white flex items-center gap-1.5">
+          <span>📱</span> Web Remote HP (Port 8080)
+        </button>
+        <button id="btnViewBoth" onclick="switchView('both')" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white flex items-center gap-1.5 hidden md:flex">
+          <span>⚡</span> Split View (Keduanya)
+        </button>
+      </div>
+
+      <!-- Quick Action Simulation Pills -->
+      <div class="flex items-center gap-1.5 flex-wrap">
+        <span class="text-xs text-slate-400 hidden xl:inline">Simulasi Mode:</span>
+        <button onclick="triggerMode('normal')" class="text-xs bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 rounded-lg font-medium border border-slate-700">Normal</button>
+        <button onclick="triggerMode('preadhan')" class="text-xs bg-amber-950/60 hover:bg-amber-900/60 text-amber-300 px-2.5 py-1.5 rounded-lg font-medium border border-amber-700/50">Pra-Adzan</button>
+        <button onclick="triggerMode('adhan')" class="text-xs bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-300 px-2.5 py-1.5 rounded-lg font-medium border border-emerald-700/50">Adzan</button>
+        <button onclick="triggerMode('iqomah')" class="text-xs bg-cyan-950/60 hover:bg-cyan-900/60 text-cyan-300 px-2.5 py-1.5 rounded-lg font-medium border border-cyan-700/50">Iqomah</button>
+        <button onclick="triggerMode('sholat')" class="text-xs bg-slate-900 hover:bg-slate-800 text-slate-400 px-2.5 py-1.5 rounded-lg font-medium border border-slate-700">Sholat Silent</button>
+        <button onclick="triggerMode('cctv')" class="text-xs bg-rose-950/60 hover:bg-rose-900/60 text-rose-300 px-2.5 py-1.5 rounded-lg font-medium border border-rose-700/50">Live CCTV</button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- MAIN PREVIEW CONTAINER -->
+  <main class="flex-1 p-4 max-w-7xl mx-auto w-full flex flex-col gap-6">
+
+    <!-- 1. TV SIGNAGE DISPLAY CONTAINER -->
+    <section id="sectionTv" class="w-full">
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-2 text-xs font-semibold text-emerald-400">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          TAMPILAN DISPLAY TV SIGNAGE (ASPECT RATIO 16:9)
+        </div>
+        <div class="flex items-center gap-3 text-xs text-slate-400">
+          <span>Lokasi: <strong class="text-amber-300">Darangdan, Purwakarta (-6.6961, 107.4239)</strong></span>
+          <span>Tema: <strong class="text-emerald-300">Mihrab Nabawi Emerald Gold</strong></span>
+        </div>
+      </div>
+
+      <!-- TV SCREEN FRAME -->
+      <div class="w-full aspect-[16/9] max-h-[82vh] bg-black rounded-2xl overflow-hidden shadow-2xl border-4 border-slate-800 relative flex flex-col justify-between p-4 md:p-6 select-none" style="background: linear-gradient(rgba(2, 20, 14, 0.35), rgba(2, 20, 14, 0.35)), url('app/src/main/res/drawable/bg_preset_emerald_mihrab.jpg') center / cover;">
+        
+        <!-- Subtle Geometric Islamic Pattern Overlay -->
+        <div class="absolute inset-0 opacity-10 pointer-events-none" style="background-image: radial-gradient(#34D399 1px, transparent 1px); background-size: 24px 24px;"></div>
+
+        <!-- 1. TOP HEADER & STANDALONE DIGITAL CLOCK -->
+        <div class="relative z-10 flex items-stretch justify-between gap-4">
+          
+          <!-- Mosque Identity Box -->
+          <div class="tv-glass rounded-2xl px-5 py-2.5 flex items-center gap-4 flex-1">
+            <div class="w-14 h-14 rounded-full bg-gradient-to-tr from-amber-400 to-amber-600 flex items-center justify-center text-slate-950 font-black text-2xl shadow-lg border-2 border-amber-200/60">
+              🕌
+            </div>
+            <div class="flex-1 min-w-0">
+              <h2 id="tvMosqueName" class="text-2xl md:text-3xl font-black text-white tracking-wide truncate uppercase drop-shadow-md">
+                MASJID ENDAN ANDANSIH
+              </h2>
+              <div class="flex items-center gap-2 text-xs md:text-sm font-semibold text-emerald-300">
+                <span id="tvTagline" class="tracking-wider">PUSAT IBADAH, PEMBINAAN UMAT, & DAKWAH ISLAM</span>
+                <span class="text-slate-400">•</span>
+                <span id="tvAddress" class="text-slate-300 truncate">Neglasari, Kec. Darangdan, Purwakarta, Jawa Barat</span>
+                <span class="hidden lg:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-orbitron font-bold">
+                  <span>📶</span> REMOTE: http://192.168.1.50:8080
+                </span>
+              </div>
+            </div>
+            <!-- Hijri & Gregorian Date -->
+            <div class="text-right hidden sm:block border-l border-emerald-600/30 pl-4">
+              <div class="flex items-center justify-end gap-1.5 text-amber-300 font-bold text-base md:text-lg">
+                <span>✦</span>
+                <span id="tvHijriDate">14 Ramadhan 1448 H</span>
+              </div>
+              <div id="tvGregorianDate" class="text-xs md:text-sm font-bold text-emerald-200 tracking-wider">
+                JUM'AT, 28 SEPTEMBER 2026
+              </div>
+            </div>
+          </div>
+
+          <!-- Standalone Prominent Digital Clock Card -->
+          <div class="tv-glass rounded-2xl px-5 py-2 flex items-center gap-3 border-2 border-amber-400/50 bg-gradient-to-br from-emerald-950/90 to-black/95 shadow-xl">
+            <div class="flex items-center font-bold tracking-tight">
+              <span id="tvHours" class="text-4xl md:text-5xl lg:text-6xl text-white font-rajdhani">17</span>
+              <span id="tvColon" class="text-4xl md:text-5xl lg:text-6xl text-amber-400 font-rajdhani px-1 animate-pulse">:</span>
+              <span id="tvMinutes" class="text-4xl md:text-5xl lg:text-6xl text-white font-rajdhani">48</span>
+            </div>
+            <div class="flex flex-col items-start justify-center border-l border-emerald-800/60 pl-3">
+              <span id="tvSeconds" class="text-xl md:text-2xl font-bold text-amber-400 font-orbitron">:25</span>
+              <span class="text-[10px] font-extrabold text-emerald-300 tracking-widest">WIB</span>
+            </div>
+            <div class="text-amber-400/80 cursor-pointer p-1.5 hover:text-amber-300 transition-colors" title="Buka Pengaturan">
+              ⚙️
+            </div>
+          </div>
+
+        </div>
+
+        <!-- 2. CENTER STAGE (CAROUSEL & COUNTDOWN HIGHLIGHT) -->
+        <div class="relative z-10 my-auto grid grid-cols-12 gap-4 items-stretch h-[54%] max-h-[360px]">
+          
+          <!-- Center Main Media Carousel (8 cols) -->
+          <div class="col-span-8 tv-glass rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden">
+            <!-- Slide Header Tabs Indicator -->
+            <div class="flex items-center justify-between border-b border-emerald-800/40 pb-2">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-amber-400 bg-amber-400/10 px-2.5 py-1 rounded-md border border-amber-400/30" id="slideBadgeTitle">
+                  💰 KAS MASJID ENDAN ANDANSIH
+                </span>
+                <span class="text-xs text-slate-400">Transparansi Keuangan DKM</span>
+              </div>
+              <div class="flex gap-1.5">
+                <button onclick="setSlide(0)" class="w-3 h-3 rounded-full bg-amber-400" id="dot0"></button>
+                <button onclick="setSlide(1)" class="w-3 h-3 rounded-full bg-slate-700" id="dot1"></button>
+                <button onclick="setSlide(2)" class="w-3 h-3 rounded-full bg-slate-700" id="dot2"></button>
+                <button onclick="setSlide(3)" class="w-3 h-3 rounded-full bg-slate-700" id="dot3"></button>
+              </div>
+            </div>
+
+            <!-- Slide Content 0: Kas Masjid Nyata -->
+            <div id="slideContent0" class="my-auto py-2">
+              <div class="grid grid-cols-3 gap-3 mb-3">
+                <div class="bg-emerald-950/70 border border-emerald-500/30 rounded-xl p-3 text-center">
+                  <span class="text-[11px] font-bold text-emerald-300 uppercase">Saldo Akhir Kas</span>
+                  <div class="text-xl md:text-2xl font-black text-amber-300 font-rajdhani mt-0.5">Rp 14.850.000</div>
+                  <span class="text-[9px] text-slate-400">Kas Tunai & BSI</span>
+                </div>
+                <div class="bg-emerald-950/70 border border-emerald-500/30 rounded-xl p-3 text-center">
+                  <span class="text-[11px] font-bold text-emerald-300 uppercase">Infaq Jum'at & Donasi</span>
+                  <div class="text-xl md:text-2xl font-black text-emerald-400 font-rajdhani mt-0.5">+ Rp 24.800.000</div>
+                  <span class="text-[9px] text-emerald-400/80">Kotak Amal + QRIS</span>
+                </div>
+                <div class="bg-rose-950/40 border border-rose-500/30 rounded-xl p-3 text-center">
+                  <span class="text-[11px] font-bold text-rose-300 uppercase">Biaya Listrik, Marbot & Yatim</span>
+                  <div class="text-xl md:text-2xl font-black text-rose-400 font-rajdhani mt-0.5">- Rp 9.950.000</div>
+                  <span class="text-[9px] text-rose-300/80">Listrik/Air & Santunan</span>
+                </div>
+              </div>
+              <p class="text-xs text-center text-slate-300 italic">"Barangsiapa membangun masjid karena Allah, maka Allah akan membangunkan baginya rumah di surga." (HR. Bukhari & Muslim)</p>
+            </div>
+
+            <!-- Slide Content 1: Petugas Jum'at Aktual -->
+            <div id="slideContent1" class="hidden my-auto py-2">
+              <h3 class="text-sm font-bold text-amber-300 mb-2 uppercase tracking-wider text-center">Petugas Sholat Jum'at Masjid Endan Andansih</h3>
+              <div class="grid grid-cols-4 gap-2">
+                <div class="bg-emerald-950/60 border border-emerald-500/20 p-2.5 rounded-xl text-center">
+                  <span class="text-[10px] text-amber-400 font-bold block">KHOTIB</span>
+                  <strong class="text-xs text-white block mt-1">Prof. Dr. KH. Ahmad Syakir, M.A.</strong>
+                  <span class="text-[10px] text-slate-400 block mt-0.5">Tema: Istiqomah Ibadah</span>
+                </div>
+                <div class="bg-emerald-950/60 border border-emerald-500/20 p-2.5 rounded-xl text-center">
+                  <span class="text-[10px] text-amber-400 font-bold block">IMAM</span>
+                  <strong class="text-xs text-white block mt-1">Ust. H. M. Firdaus Al-Hafidz</strong>
+                  <span class="text-[10px] text-slate-400 block mt-0.5">Imam Sholat Jum'at</span>
+                </div>
+                <div class="bg-emerald-950/60 border border-emerald-500/20 p-2.5 rounded-xl text-center">
+                  <span class="text-[10px] text-amber-400 font-bold block">MUADZIN</span>
+                  <strong class="text-xs text-white block mt-1">Ust. Bilal Ramadhan</strong>
+                  <span class="text-[10px] text-slate-400 block mt-0.5">Adzan Jum'at</span>
+                </div>
+                <div class="bg-emerald-950/60 border border-emerald-500/20 p-2.5 rounded-xl text-center">
+                  <span class="text-[10px] text-amber-400 font-bold block">BILAL / BADAL</span>
+                  <strong class="text-xs text-white block mt-1">Akhi Muhammad Syahril</strong>
+                  <span class="text-[10px] text-slate-400 block mt-0.5">Muraqqi Sholat</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Slide Content 2: QRIS & Rekening BSI Aktual -->
+            <div id="slideContent2" class="hidden my-auto py-2 flex items-center justify-around">
+              <div class="w-32 h-32 bg-white rounded-xl p-2 flex items-center justify-center shadow-lg border-2 border-amber-400">
+                <div class="text-slate-900 font-bold text-center text-xs">
+                  <div class="text-2xl mb-1">📱</div>
+                  QRIS DONASI
+                  <div class="text-[9px] text-slate-500 mt-1">GPN / BSI / BCA</div>
+                </div>
+              </div>
+              <div class="max-w-md">
+                <h4 class="text-base font-extrabold text-amber-300">Infaq & Shadaqah Digital</h4>
+                <p class="text-xs text-slate-200 mt-1">Salurkan infaq operasional dan kemakmuran masjid melalui QRIS atau transfer rekening resmi DKM:</p>
+                <div class="mt-2 text-xs bg-emerald-950/80 p-2.5 rounded-lg border border-emerald-500/30 text-emerald-200">
+                  Bank Syariah Indonesia (BSI): <strong class="text-amber-300 text-sm">7123 4567 89</strong><br>
+                  A.N: <strong>DKM MASJID ENDAN ANDANSIH</strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- Slide Content 3: Agenda Kajian -->
+            <div id="slideContent3" class="hidden my-auto py-2 text-center">
+              <h3 class="text-sm font-bold text-amber-300 mb-2 uppercase tracking-wider">Agenda Kajian & Taklim Masjid Endan Andansih</h3>
+              <div class="grid grid-cols-2 gap-3 max-w-lg mx-auto text-left">
+                <div class="bg-emerald-950/70 p-2.5 rounded-xl border border-emerald-500/30">
+                  <span class="text-[10px] text-amber-400 font-bold block">AHAD PAGI (BA'DA SUBUH)</span>
+                  <strong class="text-xs text-white block mt-0.5">Kajian Riyadhus Shalihin</strong>
+                  <span class="text-[10px] text-emerald-200 block">Buya H. Yahya Zainul Ma'arif</span>
+                </div>
+                <div class="bg-emerald-950/70 p-2.5 rounded-xl border border-emerald-500/30">
+                  <span class="text-[10px] text-amber-400 font-bold block">SABTU MALAM (BA'DA MAGHRIB)</span>
+                  <strong class="text-xs text-white block mt-0.5">Fiqih Ibadah & Muamalah</strong>
+                  <span class="text-[10px] text-emerald-200 block">Ust. Dr. Syafiq Riza Basalamah</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-emerald-800/30">
+              <span>Web Remote Control: <strong class="text-emerald-300">http://192.168.1.50:8080</strong></span>
+              <span>Slide berganti otomatis tiap 15 detik</span>
+            </div>
+          </div>
+
+          <!-- Right Side Highlight Card: Next Prayer (Maghrib Purwakarta) -->
+          <div class="col-span-4 tv-glass rounded-2xl p-4 flex flex-col justify-between border-2 border-amber-400/60 bg-gradient-to-b from-emerald-900/90 via-emerald-950/90 to-black/95 shadow-2xl">
+            <div class="text-center">
+              <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/20 border border-amber-400/50 text-amber-300 font-extrabold text-xs">
+                <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                <span>MENUJU MAGHRIB</span>
+              </div>
+            </div>
+
+            <div class="text-center my-auto">
+              <div class="text-xs text-emerald-200 font-semibold uppercase tracking-wider mb-1">Hitung Mundur Adzan:</div>
+              <div id="tvCountdown" class="text-4xl md:text-5xl font-black text-amber-300 font-orbitron tracking-tight drop-shadow-lg">
+                -00:06:35
+              </div>
+              <div class="text-xs font-bold text-emerald-300 mt-1">
+                Waktu Adzan: <span class="text-white font-rajdhani text-base">17:55 WIB</span>
+              </div>
+            </div>
+
+            <div class="bg-emerald-950/70 border border-emerald-500/30 rounded-xl p-2.5 text-center text-xs">
+              <div class="text-slate-300">Imam Maghrib:</div>
+              <div class="font-bold text-amber-200 mt-0.5">Ust. H. Abdul Somad, Lc.</div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- 3. BOTTOM PRAYER TIMES BAR (AKURAT SESUAI JADWAL PURWAKARTA) -->
+        <div class="relative z-10">
+          <div class="grid grid-cols-7 gap-2 md:gap-3 items-stretch h-24 md:h-28">
+            
+            <!-- IMSAK -->
+            <div class="tv-card-normal rounded-xl p-2 flex flex-col justify-between items-center text-center">
+              <span class="text-[11px] font-extrabold text-emerald-300 tracking-wider">IMSAK</span>
+              <span class="text-2xl md:text-3xl font-black text-white font-rajdhani tracking-tight">04:21</span>
+              <span class="text-xs text-emerald-200 font-amiri font-bold">الإمساك</span>
+            </div>
+
+            <!-- SUBUH -->
+            <div class="tv-card-normal rounded-xl p-2 flex flex-col justify-between items-center text-center">
+              <span class="text-[11px] font-extrabold text-emerald-300 tracking-wider">SUBUH</span>
+              <span class="text-2xl md:text-3xl font-black text-white font-rajdhani tracking-tight">04:31</span>
+              <span class="text-xs text-emerald-200 font-amiri font-bold">الفجر</span>
+            </div>
+
+            <!-- TERBIT -->
+            <div class="tv-card-normal rounded-xl p-2 flex flex-col justify-between items-center text-center opacity-85">
+              <span class="text-[11px] font-extrabold text-slate-300 tracking-wider">TERBIT</span>
+              <span class="text-2xl md:text-3xl font-black text-slate-200 font-rajdhani tracking-tight">05:43</span>
+              <span class="text-xs text-slate-400 font-amiri font-bold">الشروq</span>
+            </div>
+
+            <!-- DZUHUR -->
+            <div class="tv-card-normal rounded-xl p-2 flex flex-col justify-between items-center text-center">
+              <span class="text-[11px] font-extrabold text-emerald-300 tracking-wider">DZUHUR</span>
+              <span class="text-2xl md:text-3xl font-black text-white font-rajdhani tracking-tight">11:51</span>
+              <span class="text-xs text-emerald-200 font-amiri font-bold">الظهر</span>
+            </div>
+
+            <!-- ASHAR -->
+            <div class="tv-card-normal rounded-xl p-2 flex flex-col justify-between items-center text-center">
+              <span class="text-[11px] font-extrabold text-emerald-300 tracking-wider">ASHAR</span>
+              <span class="text-2xl md:text-3xl font-black text-white font-rajdhani tracking-tight">15:04</span>
+              <span class="text-xs text-emerald-200 font-amiri font-bold">العصر</span>
+            </div>
+
+            <!-- MAGHRIB (HIGHLIGHTED ACTIVE NEXT PRAYER) -->
+            <div class="tv-card-active rounded-xl p-2 flex flex-col justify-between items-center text-center transform -translate-y-1 shadow-2xl border-2 border-white/80">
+              <div class="flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-slate-950 animate-ping"></span>
+                <span class="text-[11px] font-black text-slate-950 tracking-wider">MAGHRIB</span>
+              </div>
+              <span class="text-2xl md:text-3xl font-black text-slate-950 font-rajdhani tracking-tight">17:55</span>
+              <span class="text-xs font-extrabold bg-slate-950/20 px-2 py-0.5 rounded text-slate-950 font-orbitron">-06:35</span>
+            </div>
+
+            <!-- ISYA -->
+            <div class="tv-card-normal rounded-xl p-2 flex flex-col justify-between items-center text-center">
+              <span class="text-[11px] font-extrabold text-emerald-300 tracking-wider">ISYA'</span>
+              <span class="text-2xl md:text-3xl font-black text-white font-rajdhani tracking-tight">19:04</span>
+              <span class="text-xs text-emerald-200 font-amiri font-bold">العشاء</span>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 4. BOTTOM RUNNING TEXT MARQUEE AKTUAL -->
+        <div class="relative z-10 mt-2 bg-emerald-950/90 border border-emerald-500/40 rounded-xl px-4 py-1.5 flex items-center overflow-hidden">
+          <div class="bg-amber-400 text-slate-950 text-[10px] font-black uppercase px-2 py-0.5 rounded mr-3 tracking-wider shrink-0 flex items-center gap-1">
+            <span>📢</span> MAKLUMAT
+          </div>
+          <div class="overflow-hidden whitespace-nowrap w-full">
+            <span id="tvMarquee" class="animate-marquee text-xs md:text-sm font-semibold text-emerald-100 tracking-wide">
+              Selamat Datang di MASJID ENDAN ANDANSIH, Neglasari, Kec. Darangdan, Kab. Purwakarta. Mohon luruskan dan rapatkan shaf sholat demi kesempurnaan sholat berjamaah • Rasulullah ﷺ bersabda: "Barangsiapa membangun masjid karena Allah, maka Allah akan membangunkan baginya rumah di surga." • Infaq & Shadaqah dapat disalurkan melalui BSI No. Rek: 7123 4567 89 a.n DKM MASJID ENDAN ANDANSIH.
+            </span>
+          </div>
+        </div>
+
+        <!-- FULLSCREEN OVERLAY SIMULATION (UI/UX PRO MAX) -->
+        <div id="tvOverlay" class="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 md:p-8 text-center transition-all duration-300 hidden">
+          <div id="overlayContent" class="w-full h-full flex flex-col items-center justify-center relative"></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 2. WEB REMOTE CONTROL SECTION (PORT 8080) -->
+    <section id="sectionRemote" class="w-full">
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-2 text-xs font-semibold text-amber-400">
+          <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+          SIMULASI WEB REMOTE CONTROL DKM — MASJID ENDAN ANDANSIH
+        </div>
+        <div class="text-xs text-slate-400">
+          Akses Browser HP: <code class="bg-slate-800 px-2 py-0.5 rounded text-emerald-300">http://192.168.1.50:8080</code>
+        </div>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 md:p-6 shadow-xl max-w-4xl mx-auto">
+        
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-5">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl bg-emerald-600 flex items-center justify-center text-xl shadow">🕌</div>
+            <div>
+              <h3 class="font-extrabold text-base text-white">Panel DKM Masjid Endan Andansih</h3>
+              <p class="text-xs text-slate-400">Kec. Darangdan, Kab. Purwakarta, Jawa Barat</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full font-semibold">● Terhubung ke TV</span>
+            <button onclick="saveAllChanges()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2 rounded-xl shadow transition-all flex items-center gap-1.5">
+              <span>💾</span> Simpan ke TV
+            </button>
+          </div>
+        </div>
+
+        <!-- QUICK REMOTE ACTION BAR (KONTROL 1-KLIK DARI HP DKM) -->
+        <div class="mb-6 p-4 rounded-2xl bg-gradient-to-r from-emerald-950/90 via-emerald-900/80 to-emerald-950/90 border-2 border-amber-400/60 shadow-xl">
+          <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+              <strong class="text-xs font-black text-amber-300 tracking-wider uppercase">⚡ KONTROL TV LANGSUNG (1-KLIK)</strong>
+            </div>
+            <span class="text-[11px] text-slate-300">Sentuh tombol untuk langsung mengarahkan tampilan layar TV</span>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+            <button onclick="triggerMode('normal')" class="bg-gradient-to-br from-sky-600 to-sky-700 hover:from-sky-500 hover:to-sky-600 text-white font-bold text-xs py-2.5 px-3 rounded-xl shadow-md border border-sky-400/40 transition-all flex items-center justify-center gap-1.5 active:scale-95">
+              <span>🔄</span> Normal
+            </button>
+            <button onclick="triggerMode('preadhan')" class="bg-gradient-to-br from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-bold text-xs py-2.5 px-3 rounded-xl shadow-md border border-amber-400/40 transition-all flex items-center justify-center gap-1.5 active:scale-95">
+              <span>⏳</span> Pra-Adzan
+            </button>
+            <button onclick="triggerMode('adhan')" class="bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-bold text-xs py-2.5 px-3 rounded-xl shadow-md border border-emerald-400/40 transition-all flex items-center justify-center gap-1.5 active:scale-95">
+              <span>📢</span> Adzan
+            </button>
+            <button onclick="triggerMode('iqomah')" class="bg-gradient-to-br from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white font-bold text-xs py-2.5 px-3 rounded-xl shadow-md border border-purple-400/40 transition-all flex items-center justify-center gap-1.5 active:scale-95">
+              <span>⏱️</span> Iqomah
+            </button>
+            <button onclick="triggerMode('sholat')" class="bg-gradient-to-br from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 text-white font-bold text-xs py-2.5 px-3 rounded-xl shadow-md border border-slate-500/40 transition-all flex items-center justify-center gap-1.5 active:scale-95">
+              <span>🔕</span> Sholat Hening
+            </button>
+            <button onclick="playChimeSound()" class="bg-gradient-to-br from-amber-700 to-amber-800 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs py-2.5 px-3 rounded-xl shadow-md border border-amber-500/40 transition-all flex items-center justify-center gap-1.5 active:scale-95">
+              <span>🔔</span> Bel Chime
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-6">
+          <button onclick="switchRemoteTab('tabIdentitas')" class="remote-tab-btn active bg-emerald-600 text-white px-3 py-2 rounded-xl text-xs font-bold transition-all text-center">
+            🕌 Identitas & Tema
+          </button>
+          <button onclick="switchRemoteTab('tabJadwal')" class="remote-tab-btn bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl text-xs font-bold transition-all text-center">
+            ⏰ Jadwal Sholat
+          </button>
+          <button onclick="switchRemoteTab('tabMedia')" class="remote-tab-btn bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl text-xs font-bold transition-all text-center">
+            📢 Teks & Media
+          </button>
+          <button onclick="switchRemoteTab('tabKas')" class="remote-tab-btn bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl text-xs font-bold transition-all text-center">
+            💰 Kas & Jum'at
+          </button>
+          <button onclick="switchRemoteTab('tabMurottal')" class="remote-tab-btn bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl text-xs font-bold transition-all text-center">
+            🎵 Murottal & WA
+          </button>
+        </div>
+
+        <!-- TAB 1: IDENTITAS & TEMA AKTUAL -->
+        <div id="tabIdentitas" class="remote-tab-pane space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5">Nama Masjid</label>
+              <input type="text" id="inputMosqueName" value="MASJID ENDAN ANDANSIH" oninput="updateTv()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5">Tagline / Maklumat Pendek</label>
+              <input type="text" id="inputTagline" value="Pusat Ibadah, Pembinaan Umat, & Dakwah Islam" oninput="updateTv()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Alamat & Kota</label>
+            <input type="text" id="inputAddress" value="Neglasari, Kec. Darangdan, Kabupaten Purwakarta, Jawa Barat 41163" oninput="updateTv()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
+          </div>
+          <div class="border-t border-slate-800 pt-3">
+            <label class="block text-xs font-semibold text-slate-300 mb-2">Pilihan Model Layout Tampilan Layar TV</label>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <button class="p-2.5 rounded-xl border border-emerald-500/60 bg-emerald-950/40 text-left text-xs font-semibold text-white">
+                <span class="text-amber-400">Model 1:</span> Standard Klasik (Aktif)
+              </button>
+              <button class="p-2.5 rounded-xl border border-slate-700 hover:border-emerald-500/40 bg-slate-950 text-left text-xs font-semibold text-slate-300">
+                <span class="text-amber-400">Model 2:</span> Landscape 2 Kolom
+              </button>
+              <button class="p-2.5 rounded-xl border border-slate-700 hover:border-emerald-500/40 bg-slate-950 text-left text-xs font-semibold text-slate-300">
+                <span class="text-amber-400">Model 6:</span> Mihrab Grand Royal
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: JADWAL SHOLAT PURWAKARTA -->
+        <div id="tabJadwal" class="remote-tab-pane hidden space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Lokasi Koordinat GPS</label>
+              <input type="text" readonly value="Purwakarta (-6.6961, 107.4239)" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Metode Hisab</label>
+              <input type="text" readonly value="Kemenag RI (Standard)" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Penyesuaian Kalender Hijriah</label>
+              <input type="number" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+            </div>
+          </div>
+
+          <!-- Ihtiyat & Iqomah Stepper Form -->
+          <div class="border-t border-slate-800 pt-3">
+            <h4 class="text-xs font-bold text-amber-300 mb-2 uppercase">Koreksi Menit & Jeda Iqomah (Purwakarta)</h4>
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-center">
+                <span class="text-xs text-slate-400 font-bold block mb-1">SUBUH (+2 mnt)</span>
+                <span class="text-[10px] text-emerald-400 block">Jeda Iqomah: 10 mnt</span>
+              </div>
+              <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-center">
+                <span class="text-xs text-slate-400 font-bold block mb-1">DZUHUR (+2 mnt)</span>
+                <span class="text-[10px] text-emerald-400 block">Jeda Iqomah: 10 mnt</span>
+              </div>
+              <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-center">
+                <span class="text-xs text-slate-400 font-bold block mb-1">ASHAR (+2 mnt)</span>
+                <span class="text-[10px] text-emerald-400 block">Jeda Iqomah: 10 mnt</span>
+              </div>
+              <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-center">
+                <span class="text-xs text-slate-400 font-bold block mb-1">MAGHRIB (+2 mnt)</span>
+                <span class="text-[10px] text-emerald-400 block">Jeda Iqomah: 7 mnt</span>
+              </div>
+              <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-center">
+                <span class="text-xs text-slate-400 font-bold block mb-1">ISYA' (+2 mnt)</span>
+                <span class="text-[10px] text-emerald-400 block">Jeda Iqomah: 10 mnt</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: TEKS & MEDIA -->
+        <div id="tabMedia" class="remote-tab-pane hidden space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Running Text (Teks Berjalan Layar TV)</label>
+            <textarea id="inputMarquee" rows="3" oninput="updateTv()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">Selamat Datang di MASJID ENDAN ANDANSIH, Neglasari, Kec. Darangdan, Kab. Purwakarta. Mohon luruskan dan rapatkan shaf sholat demi kesempurnaan sholat berjamaah • Rasulullah ﷺ bersabda: "Barangsiapa membangun masjid karena Allah, maka Allah akan membangunkan baginya rumah di surga." • Infaq & Shadaqah dapat disalurkan melalui BSI No. Rek: 7123 4567 89 a.n DKM MASJID ENDAN ANDANSIH.</textarea>
+          </div>
+        </div>
+
+        <!-- TAB 4: KAS & JUM'AT -->
+        <div id="tabKas" class="remote-tab-pane hidden space-y-4">
+          <div class="grid grid-cols-3 gap-3">
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+              <span class="text-xs text-slate-400 block">Saldo Kas Terkini</span>
+              <strong class="text-base text-amber-400 font-rajdhani">Rp 14.850.000</strong>
+            </div>
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+              <span class="text-xs text-slate-400 block">Infaq & Donasi Masuk</span>
+              <strong class="text-base text-emerald-400 font-rajdhani">Rp 24.800.000</strong>
+            </div>
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+              <span class="text-xs text-slate-400 block">Biaya Operasional & Santunan</span>
+              <strong class="text-base text-rose-400 font-rajdhani">Rp 9.950.000</strong>
+            </div>
+          </div>
+          <div class="text-right">
+            <button class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg shadow">
+              + Catat Transaksi Kas Baru
+            </button>
+          </div>
+        </div>
+
+        <!-- TAB 5: MUROTTAL & WA -->
+        <div id="tabMurottal" class="remote-tab-pane hidden space-y-4">
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+            <div>
+              <span class="text-xs font-bold text-white block">Auto Murottal Pra-Adzan</span>
+              <span class="text-[10px] text-slate-400">Putar audio Qur'an otomatis 15 menit sebelum masuk waktu sholat</span>
+            </div>
+            <input type="checkbox" checked class="w-5 h-5 accent-emerald-500">
+          </div>
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+            <div>
+              <span class="text-xs font-bold text-white block">WhatsApp Gateway (Fonnte API)</span>
+              <span class="text-[10px] text-emerald-400">Pengingat Otomatis Khotib & Petugas Sholat Jum'at</span>
+            </div>
+            <button class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg">
+              Kirim Pengingat Petugas Jum'at Sekarang
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    function startClock() {
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2, '0');
+      const m = String(now.getMinutes()).padStart(2, '0');
+      const s = String(now.getSeconds()).padStart(2, '0');
+      
+      const elH = document.getElementById('tvHours');
+      const elM = document.getElementById('tvMinutes');
+      const elS = document.getElementById('tvSeconds');
+      
+      if (elH) elH.innerText = h;
+      if (elM) elM.innerText = m;
+      if (elS) elS.innerText = ':' + s;
+    }
+    setInterval(startClock, 1000);
+    startClock();
+
+    let currentSlide = 0;
+    const titles = [
+      "💰 KAS MASJID ENDAN ANDANSIH",
+      "👥 PETUGAS SHOLAT JUM'AT",
+      "💳 INFAQ & REKENING BSI",
+      "📖 AGENDA KAJIAN RUTIN"
+    ];
+
+    function setSlide(index) {
+      currentSlide = index;
+      for (let i = 0; i < 4; i++) {
+        const slide = document.getElementById('slideContent' + i);
+        const dot = document.getElementById('dot' + i);
+        if (slide) {
+          if (i === index) {
+            slide.classList.remove('hidden');
+          } else {
+            slide.classList.add('hidden');
+          }
+        }
+        if (dot) {
+          dot.className = (i === index) ? "w-3 h-3 rounded-full bg-amber-400" : "w-3 h-3 rounded-full bg-slate-700";
+        }
+      }
+      const badge = document.getElementById('slideBadgeTitle');
+      if (badge) badge.innerText = titles[index];
+    }
+
+    setInterval(() => {
+      setSlide((currentSlide + 1) % 4);
+    }, 8000);
+
+    function switchView(view) {
+      const secTv = document.getElementById('sectionTv');
+      const secRemote = document.getElementById('sectionRemote');
+      const btnTv = document.getElementById('btnViewTv');
+      const btnRemote = document.getElementById('btnViewRemote');
+      const btnBoth = document.getElementById('btnViewBoth');
+
+      if (view === 'tv') {
+        secTv.classList.remove('hidden');
+        secRemote.classList.add('hidden');
+        btnTv.className = "px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-emerald-600 text-white shadow-md flex items-center gap-1.5";
+        btnRemote.className = "px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white flex items-center gap-1.5";
+        btnBoth.className = "px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white flex items-center gap-1.5 hidden md:flex";
+      } else if (view === 'remote') {
+        secTv.classList.add('hidden');
+        secRemote.classList.remove('hidden');
+        btnTv.className = "px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white flex items-center gap-1.5";
+        btnRemote.className = "px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-emerald-600 text-white shadow-md flex items-center gap-1.5";
+        btnBoth.className = "px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white flex items-center gap-1.5 hidden md:flex";
+      } else {
+        secTv.classList.remove('hidden');
+        secRemote.classList.remove('hidden');
+        btnTv.className = "px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white flex items-center gap-1.5";
+        btnRemote.className = "px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white flex items-center gap-1.5";
+        btnBoth.className = "px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-emerald-600 text-white shadow-md flex items-center gap-1.5 hidden md:flex";
+      }
+    }
+
+    function switchRemoteTab(tabId) {
+      document.querySelectorAll('.remote-tab-pane').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.remote-tab-btn').forEach(btn => {
+        btn.classList.remove('active', 'bg-emerald-600', 'text-white');
+        btn.classList.add('bg-slate-800', 'text-slate-300');
+      });
+
+      const target = document.getElementById(tabId);
+      if (target) target.classList.remove('hidden');
+
+      const activeBtn = event.currentTarget;
+      if (activeBtn) {
+        activeBtn.classList.remove('bg-slate-800', 'text-slate-300');
+        activeBtn.classList.add('active', 'bg-emerald-600', 'text-white');
+      }
+    }
+
+    function updateTv() {
+      const name = document.getElementById('inputMosqueName').value;
+      const tagline = document.getElementById('inputTagline').value;
+      const address = document.getElementById('inputAddress').value;
+      const marquee = document.getElementById('inputMarquee').value;
+
+      document.getElementById('tvMosqueName').innerText = name.toUpperCase();
+      document.getElementById('tvTagline').innerText = tagline.toUpperCase();
+      document.getElementById('tvAddress').innerText = address;
+      document.getElementById('tvMarquee').innerText = marquee;
+    }
+
+    function saveAllChanges() {
+      alert("✅ Pengaturan berhasil disimpan dan dikirim ke layar TV!");
+    }
+
+    function playChimeSound() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.4);
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.2);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 1.2);
+      } catch(e) {}
+      alert("🔔 [SIMULASI BEL CHIME] Suara bel chime masuk waktu sholat berbunyi di speaker TV!");
+    }
+
+    function triggerMode(mode) {
+      const overlay = document.getElementById('tvOverlay');
+      const content = document.getElementById('overlayContent');
+
+      if (mode === 'normal') {
+        overlay.classList.add('hidden');
+        overlay.style.background = '';
+        return;
+      }
+
+      overlay.classList.remove('hidden');
+
+      if (mode === 'preadhan') {
+        overlay.style.background = "radial-gradient(circle at center, rgba(1, 20, 14, 0.95) 0%, rgba(0, 0, 0, 0.98) 100%)";
+        content.innerHTML = `
+          <button onclick="triggerMode('normal')" class="absolute top-2 right-2 w-10 h-10 rounded-full bg-emerald-950/80 border border-slate-700 hover:border-amber-400 text-white flex items-center justify-center text-lg transition-all shadow-lg" title="Tutup Overlay">✕</button>
+          <div class="inline-flex items-center gap-2 px-5 py-1.5 rounded-full bg-amber-400/20 border border-amber-400/80 text-amber-200 text-xs font-black tracking-widest uppercase mb-3">
+            <span>✦</span> HITUNG MUNDUR MENJELANG WAKTU SHOLAT <span>✦</span>
+          </div>
+          <h2 class="text-3xl md:text-5xl font-black text-white tracking-tight uppercase">PERSIAPAN SHOLAT MAGHRIB</h2>
+          
+          <div class="my-4 px-12 py-3 rounded-2xl bg-black/95 border-4 border-amber-400/90 shadow-[0_0_40px_rgba(251,191,36,0.35)] flex items-baseline justify-center gap-3">
+            <span class="text-6xl md:text-8xl font-black text-amber-400 font-mono tracking-tighter">00:29</span>
+            <span class="text-2xl md:text-3xl font-black text-amber-300 font-rajdhani">detik</span>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-center gap-3 my-3">
+            <div class="flex items-center gap-3 bg-emerald-950/90 border border-emerald-400/80 rounded-2xl px-5 py-2 text-left shadow-lg">
+              <div class="w-9 h-9 rounded-full bg-emerald-500/20 border border-emerald-400/50 flex items-center justify-center text-lg">👳</div>
+              <div>
+                <span class="text-[10px] text-emerald-300 font-black tracking-wider block">IMAM SHOLAT</span>
+                <strong class="text-sm md:text-base text-white font-bold">Ust. H. M. Firdaus Al-Hafidz</strong>
+              </div>
+            </div>
+            <div class="flex items-center gap-3 bg-emerald-950/90 border border-amber-400/80 rounded-2xl px-5 py-2 text-left shadow-lg">
+              <div class="w-9 h-9 rounded-full bg-amber-500/20 border border-amber-400/50 flex items-center justify-center text-lg">📢</div>
+              <div>
+                <span class="text-[10px] text-amber-300 font-black tracking-wider block">MUADZIN</span>
+                <strong class="text-sm md:text-base text-white font-bold">Ust. Bilal Ramadhan</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-2 inline-flex items-center gap-2 px-6 py-2 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs md:text-sm font-bold shadow">
+            <span>💧</span> Silakan mengambil air wudhu & bersiap mengisi shaf terdepan
+          </div>
+        `;
+      } else if (mode === 'adhan') {
+        overlay.style.background = "radial-gradient(circle at center, #065F46 0%, #03281E 50%, #01140E 100%)";
+        content.innerHTML = `
+          <button onclick="triggerMode('normal')" class="absolute top-2 right-2 w-10 h-10 rounded-full bg-emerald-950/80 border border-slate-700 hover:border-amber-400 text-white flex items-center justify-center text-lg transition-all shadow-lg" title="Tutup Overlay">✕</button>
+          
+          <div class="relative flex items-center justify-center mb-2">
+            <div class="absolute w-24 h-24 rounded-full bg-amber-400/20 border border-amber-400/40 animate-ping"></div>
+            <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-amber-500 to-amber-300 border-2 border-amber-100 flex items-center justify-center text-3xl shadow-xl">
+              🕌
+            </div>
+          </div>
+
+          <div class="inline-flex items-center gap-2 px-5 py-1 rounded-full bg-amber-400/20 border border-amber-400/80 text-amber-200 text-xs font-black tracking-widest uppercase mb-1">
+            <span>✦</span> WAKTU SHOLAT TELAH TIBA <span>✦</span>
+          </div>
+          <h2 class="text-3xl md:text-5xl font-black text-white tracking-tight uppercase">ADZAN MAGHRIB BERKUMANDANG</h2>
+
+          <div class="text-3xl md:text-5xl font-amiri text-amber-300 font-bold tracking-wide my-3 drop-shadow-[0_0_20px_rgba(251,191,36,0.5)]">
+            حَيَّ عَلَى الصَّلَاةِ • حَيَّ عَلَى الْفَلَاحِ
+          </div>
+          <p class="text-xs md:text-sm text-slate-200 italic font-medium mb-3">“Marilah mendirikan sholat • Marilah meraih kemenangan”</p>
+
+          <div class="flex flex-wrap items-center justify-center gap-3 my-2">
+            <div class="flex items-center gap-3 bg-emerald-950/90 border border-emerald-400/80 rounded-2xl px-5 py-1.5 text-left shadow-lg">
+              <div class="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-400/50 flex items-center justify-center text-base">👳</div>
+              <div>
+                <span class="text-[10px] text-emerald-300 font-black tracking-wider block">IMAM SHOLAT</span>
+                <strong class="text-xs md:text-sm text-white font-bold">Ust. H. M. Firdaus Al-Hafidz</strong>
+              </div>
+            </div>
+            <div class="flex items-center gap-3 bg-emerald-950/90 border border-amber-400/80 rounded-2xl px-5 py-1.5 text-left shadow-lg">
+              <div class="w-8 h-8 rounded-full bg-amber-500/20 border border-amber-400/50 flex items-center justify-center text-base">📢</div>
+              <div>
+                <span class="text-[10px] text-amber-300 font-black tracking-wider block">MUADZIN</span>
+                <strong class="text-xs md:text-sm text-white font-bold">Ust. Bilal Ramadhan</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-2 inline-flex items-center gap-2 px-6 py-2 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs md:text-sm font-bold shadow">
+            <span>🕌</span> Mari menjawab seruan adzan & bersiap mendirikan sholat berjamaah
+          </div>
+        `;
+      } else if (mode === 'iqomah') {
+        overlay.style.background = "radial-gradient(circle at center, rgba(1, 20, 14, 0.95) 0%, rgba(0, 0, 0, 0.98) 100%)";
+        content.innerHTML = `
+          <button onclick="triggerMode('normal')" class="absolute top-2 right-2 w-10 h-10 rounded-full bg-emerald-950/80 border border-slate-700 hover:border-amber-400 text-white flex items-center justify-center text-lg transition-all shadow-lg" title="Tutup Overlay">✕</button>
+          
+          <div class="inline-flex items-center gap-2 px-5 py-1.5 rounded-full bg-amber-400/20 border border-amber-400/80 text-amber-200 text-xs font-black tracking-widest uppercase mb-2">
+            <span>✦</span> HITUNG MUNDUR MENUJU IQOMAH <span>✦</span>
+          </div>
+          <h2 class="text-3xl md:text-5xl font-black text-white tracking-tight uppercase">SHOLAT MAGHRIB BERJAMAAH</h2>
+
+          <div class="flex items-center justify-center my-2">
+            <div class="flex items-center gap-3 bg-emerald-950/90 border border-emerald-400/80 rounded-2xl px-5 py-1.5 text-left shadow-lg">
+              <div class="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-400/50 flex items-center justify-center text-base">👳</div>
+              <div>
+                <span class="text-[10px] text-emerald-300 font-black tracking-wider block">IMAM SHOLAT</span>
+                <strong class="text-xs md:text-sm text-white font-bold">Ust. H. M. Firdaus Al-Hafidz</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="my-3 px-12 py-3 rounded-2xl bg-black/95 border-4 border-amber-400/90 shadow-[0_0_45px_rgba(251,191,36,0.4)]">
+            <span class="text-6xl md:text-8xl font-black text-amber-400 font-mono tracking-tighter">05:42</span>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-center gap-4 mt-2">
+            <div class="flex items-center gap-2.5 px-5 py-2.5 rounded-2xl bg-emerald-950/90 border border-emerald-500/40 text-white text-xs md:text-sm font-bold shadow">
+              <span class="text-amber-400 text-lg">🔕</span> Matikan / Senyapkan Nada Dering HP
+            </div>
+            <div class="flex items-center gap-2.5 px-5 py-2.5 rounded-2xl bg-emerald-950/90 border border-emerald-500/40 text-white text-xs md:text-sm font-bold shadow">
+              <span class="text-emerald-400 text-lg">📐</span> Luruskan dan Rapatkan Shaf Sholat
+            </div>
+          </div>
+        `;
+      } else if (mode === 'sholat') {
+        overlay.style.background = "#000000";
+        content.innerHTML = `
+          <button onclick="triggerMode('normal')" class="absolute top-2 right-2 w-10 h-10 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-white flex items-center justify-center text-lg transition-all" title="Tutup Overlay">✕</button>
+          
+          <div class="flex items-center gap-2 mb-3">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="text-emerald-400 font-extrabold text-sm md:text-base tracking-widest uppercase">SHOLAT MAGHRIB BERJAMAAH SEDANG BERLANGSUNG</span>
+          </div>
+
+          <div class="text-3xl md:text-5xl font-amiri text-amber-300/90 font-bold my-5 leading-relaxed">
+            سَوُّوا صُفُوفَكُمْ فَإِنَّ تَسْوِيَةَ الصُّفُوفِ مِنْ إِقَامَةِ الصَّلَاةِ
+          </div>
+
+          <p class="text-sm md:text-base text-slate-300 max-w-2xl font-normal leading-relaxed mb-6">
+            “Luruskan shaf-shaf kalian, karena meluruskan shaf adalah bagian dari kesempurnaan sholat.”
+            <span class="block text-xs text-slate-400 mt-1 font-medium">(HR. Bukhari & Muslim)</span>
+          </p>
+
+          <div class="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-zinc-900/80 border border-zinc-800 text-slate-400 text-xs font-mono">
+            <span>Mode Layar Hening (08:45) • Layar akan kembali aktif seusai sholat</span>
+          </div>
+        `;
+      } else if (mode === 'cctv') {
+        overlay.style.background = "#000000";
+        content.innerHTML = `
+          <div class="w-full h-full flex flex-col justify-between">
+            <div class="flex items-center justify-between bg-black/85 px-4 py-2 rounded-xl border-b border-zinc-800 mb-3">
+              <div class="flex items-center gap-3">
+                <span class="bg-red-600 text-white text-[11px] font-black px-2.5 py-1 rounded-md flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-white animate-ping"></span> LIVE CCTV MASJID
+                </span>
+                <span class="text-sm font-bold text-white">Multi-Kamera CCTV (2x2 Grid Area Masjid Endan Andansih)</span>
+                <span class="text-xs text-slate-400 bg-zinc-800 px-2 py-0.5 rounded">🔇 Audio Senyap</span>
+              </div>
+              <button onclick="triggerMode('normal')" class="w-8 h-8 rounded-full bg-zinc-800 hover:bg-zinc-700 text-white flex items-center justify-center text-sm font-bold">✕</button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 flex-1 min-h-0">
+              <div class="bg-zinc-900 rounded-xl border border-zinc-800 relative overflow-hidden flex items-center justify-center">
+                <span class="text-slate-500 text-xs font-mono">CAM 1: Area Mihrab & Shaf Utama</span>
+                <span class="absolute bottom-2 left-2 text-[10px] bg-black/80 px-2 py-0.5 rounded text-emerald-400 font-mono">● LIVE 1080p</span>
+              </div>
+              <div class="bg-zinc-900 rounded-xl border border-zinc-800 relative overflow-hidden flex items-center justify-center">
+                <span class="text-slate-500 text-xs font-mono">CAM 2: Halaman Parkir & Gerbang</span>
+                <span class="absolute bottom-2 left-2 text-[10px] bg-black/80 px-2 py-0.5 rounded text-emerald-400 font-mono">● LIVE 1080p</span>
+              </div>
+              <div class="bg-zinc-900 rounded-xl border border-zinc-800 relative overflow-hidden flex items-center justify-center">
+                <span class="text-slate-500 text-xs font-mono">CAM 3: Tempat Wudhu Ikhwan & Akhwat</span>
+                <span class="absolute bottom-2 left-2 text-[10px] bg-black/80 px-2 py-0.5 rounded text-emerald-400 font-mono">● LIVE 1080p</span>
+              </div>
+              <div class="bg-zinc-900 rounded-xl border border-zinc-800 relative overflow-hidden flex items-center justify-center">
+                <span class="text-slate-500 text-xs font-mono">CAM 4: Pintu Masuk Utama</span>
+                <span class="absolute bottom-2 left-2 text-[10px] bg-black/80 px-2 py-0.5 rounded text-emerald-400 font-mono">● LIVE 1080p</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    }
+  </script>
+
+<footer style="padding:16px;text-align:center;font:12px/1.5 system-ui">Credit by Muhammad Irsyad Sirojul Khoeir (irsyads.com)</footer>
+</body>
+</html>

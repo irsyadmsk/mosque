@@ -86,6 +86,27 @@ val ExpenseRed = Color(0xFFF43F5E)
 val BadgeBlue = Color(0xFF38BDF8)
 val BadgePurple = Color(0xFFA855F7)
 
+// =========================================================================
+// UI/UX Pro Max — Modern Sacred Islamic Design System Tokens
+// =========================================================================
+// 1. Surface & Depth Hierarchy (Optimized for 10-foot TV & OLED display)
+val TvSurfaceDeep = Color(0xFF01140E) // 99% Pure Obsidian Deep Emerald
+val TvSurfaceElevated = Color(0xFF04261C) // Elevated Container
+val TvSurfaceGlass = Color(0x40064E3B) // High contrast frosted card glass
+
+// 2. Sacred Accent Gold & Emerald Resonances
+val AccentGoldPrimary = Color(0xFFD4AF37) // 24K Classic Islamic Gold
+val AccentGoldVibrant = Color(0xFFFBBF24) // Vibrant Gold for Active Highlights & Clock
+val AccentGoldLight = Color(0xFFFDE68A) // Soft Gold Glow
+val AccentGoldMuted = Color(0x33FBBF24) // Soft Gold Border Accent
+val EmeraldAccentGlow = Color(0xFF34D399) // Clean Emerald Accent
+val EmeraldAccentBorder = Color(0x3334D399) // Clean Border
+
+// 3. Text Hierarchy (WCAG AAA Contrast on Dark Backgrounds)
+val TextPrimaryHigh = Color(0xFFF8FAFC) // 100% Contrast White Slate
+val TextSecondaryMedium = Color(0xFFCBD5E1) // 80% Contrast
+val TextMutedLow = Color(0xFF94A3B8) // 60% Contrast for Subtext & Arabic labels
+
 /**
  * Safe Hex Color Parser with fallback
  */

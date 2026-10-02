@@ -38,3 +38,19 @@ KEYSTORE_INFO.md
 test_extracted.js
 *.log
 
+# Local web tools, simulator data and review evidence
+**/node_modules/
+.playwright-cli/
+**/.playwright-cli/
+**/.redesign-preview/*.png
+.redesign-preview/extraction/
+web_remote/db.json
+web_remote/uploads/
+.agents/tools/
+**/__pycache__/
+
+
+# Locally installed third-party skills and review scratch files
+.agents/
+web_remote_screenshot.png
+.public-release-work/
