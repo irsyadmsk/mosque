@@ -1,0 +1,12 @@
+/* Product layout stays native to this page; semantic colors come from Irsyads. */
+:root { --ink:var(--color-ink); --ink-2:var(--color-ink-2); --muted:var(--color-muted); --line:var(--color-line); --paper:var(--color-bg); --surface:var(--color-surface); --surface-2:var(--color-surface-2); --accent:var(--color-accent); --accent-hover:var(--color-accent-2); --accent-ink:var(--color-accent-ink); color-scheme:light }
+[data-theme="dark"] { color-scheme:dark }
+.screen { background:#192a40 }
+.appearance-controls { position:relative; font-size:12px; flex-shrink:0 }
+.appearance-controls summary { display:flex; align-items:center; min-height:44px; padding:0 14px; border:1px solid var(--line); border-radius:999px; cursor:pointer; background:var(--surface) }
+.appearance-controls > div { position:absolute; inset-inline-end:0; z-index:10; width:min(260px,calc(100vw - 40px)); padding:16px; border:1px solid var(--line); border-radius:16px; background:var(--surface); box-shadow:0 12px 30px #10233722 }
+.appearance-controls label { display:grid; gap:4px; margin-bottom:12px }
+.appearance-controls select { width:100%; min-height:44px; border:1px solid var(--line); border-radius:8px; padding:0 10px; color:var(--ink); background:var(--surface-2); font:inherit }
+.appearance-controls a { display:inline-flex; align-items:center; min-height:44px; color:var(--accent-ink) }
+.appearance-controls :focus-visible { outline:2px solid var(--accent-ink); outline-offset:3px }
+@media(max-width:850px) { header .appearance-controls { margin-inline-start:auto } header nav { flex:1 1 100%; order:3 } }

@@ -61,3 +61,7 @@ Kotlin / Jetpack Compose / Room schema 24. Identitas paket `com.alijayanet.masji
 - [Audit redesign dan batas verifikasi](ANALISIS_REDESIGN.md)
 
 Pratinjau desain lokal: `npm ci` dan `npm run preview:build` pada `web_remote`, lalu `python .redesign-preview/server.py` dari root. Buka `http://127.0.0.1:8091/.redesign-preview/`. Simulasi ini tidak mengirim perubahan ke TV; foto lokal pengguna tidak dibundel ke APK atau repository publik.
+
+## Fondasi web Irsyads v1 — kandidat lokal 2 Oktober 2026
+
+`public-site` memakai hasil ekspor `irsyads/packages/design-tokens/standalone/v1`, adapter `ecosystem.css` dan `ecosystem.js`. Kontrol Tampilan berbagi tema/palet dan tautan kembali mengikuti bahasa pusat. Halaman tetap Indonesia; TV/admin/APK tidak diubah. Sesudah ekspor pusat berubah, salin ulang aset v1. Belum dipublikasikan ke repo distribusi.
