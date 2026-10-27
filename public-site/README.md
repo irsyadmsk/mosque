@@ -48,3 +48,11 @@ Kredit proyek ini tidak menggantikan lisensi library pihak ketiga atau hak foto 
 Halaman publik mengadopsi token dan runtime Irsyads v1 (`assets/irsyads-v1`) dari repo `irsyads/packages/design-tokens/standalone/v1`. Panel Tampilan menawarkan system/light/dark dan enam palet. Preferensi tema/palet produksi memakai cookie parent-domain nonrahasia; link katalog mengikuti preferensi bahasa. Halaman produk masih Indonesia, APK/layar/admin lokal tidak berubah. Browser lokal 390 px dan reload tema/palet diuji; belum deploy atau uji perangkat nyata.
 
 Untuk memperbarui ekspor, jalankan `npm run design:export` di repo Irsyads dan salin berkas v1. Jangan mengedit hasil ekspor secara terpisah. Lihat matriks lengkap di `irsyads/docs/Project Web Irsyads/2026-10-02_PAKET_3_FONDASI.md`.
+
+## Untuk pemelihara dan AI
+
+Folder ini adalah **sumber** situs publik mosque.irsyads.com. Isinya disalin ke repo publik `irsyadmsk/masjidku-downloads` (checkout lokal `../../masjidku-downloads-release`); push ke `main` di repo itu langsung menayangkan GitHub Pages lewat `.github/workflows/pages.yml`. Saat ini kedua salinan **tidak sama** (aset `irsyads-v1`, `ecosystem.js`, ikon berbeda); bandingkan dengan `diff -rq` sebelum menyalin, dan salin hanya dengan persetujuan pemilik.
+
+- `index.html`, `style.css`: halaman unduhan. `ecosystem.css/js` + `assets/irsyads-v1/`: hasil ekspor design-tokens irsyads, jangan disunting manual.
+- Tautan APK menunjuk ke GitHub Releases repo masjidku-downloads; perbarui nomor versi bersamaan dengan rilis APK yang disetujui.
+- Situs ini tidak boleh meminta PIN pengurus atau mengontrol TV.

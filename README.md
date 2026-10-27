@@ -65,3 +65,27 @@ Pratinjau desain lokal: `npm ci` dan `npm run preview:build` pada `web_remote`, 
 ## Fondasi web Irsyads v1 — kandidat lokal 2 Oktober 2026
 
 `public-site` memakai hasil ekspor `irsyads/packages/design-tokens/standalone/v1`, adapter `ecosystem.css` dan `ecosystem.js`. Kontrol Tampilan berbagi tema/palet dan tautan kembali mengikuti bahasa pusat. Halaman tetap Indonesia; TV/admin/APK tidak diubah. Sesudah ekspor pusat berubah, salin ulang aset v1. Belum dipublikasikan ke repo distribusi.
+
+## Panduan untuk AI dan pengembang
+
+**Tiga bagian, tiga tempat:**
+
+| Bagian | Lokasi | Catatan |
+|---|---|---|
+| APK Android TV/STB | `app/` | Kotlin + Jetpack Compose + Room (schema 24) + Media3. Rincian di `app/README.md` |
+| Web admin lokal (`http://IP-TV:8080`) | Tertanam di `app/src/main/java/com/example/server/LocalHttpServer.kt` (±9.600 baris, HTML/CSS/JS di dalam string Kotlin) | Diakses pengurus dengan PIN di jaringan lokal |
+| Web publik mosque.irsyads.com | `public-site/` → disalin manual ke repo publik `../masjidku-downloads-release` | GitHub Pages; detail di `public-site/README.md` |
+
+**Alat pratinjau (bukan bukti perilaku Android):** `web_remote/` (simulator panel + bundel pratinjau desain), `.redesign-preview/` (prototipe arah desain, port 8091), `server.py` / `run_localhost.py` / `run_server.bat` (simulator lokal port 8080 memakai `web_remote`), `preview_masjidku.html`.
+
+**Aturan:**
+
+- `applicationId` `com.alijayanet.masjidkutv` **tidak boleh diubah** (pembaruan pengguna lama bergantung padanya). `namespace` kode adalah `com.example`; itu memang begitu, jangan "dirapikan".
+- Kunci release asli (`masjidku-release-key.jks`) tidak ada di workspace. **Jangan membuat kunci pengganti.** `keystore.properties`, `local.properties`, `*.apk` di-gitignore. APK publik saat ini build debug.
+- Versi di `app/build.gradle.kts` (`versionCode`/`versionName`, kini 8 / `1.0.7-beta.1`) dinaikkan hanya untuk rilis yang disetujui.
+- Ubah skema Room = naikkan `version` di `MasjidDatabase.kt` dan sediakan migrasi; data pengurus di TV tidak boleh hilang.
+- Inti tetap offline: jangan memindahkan data Room ke Supabase atau menambah layanan cloud (keputusan pemilik 2 Okt 2026, lihat `PRODUCT.md`).
+- Menurut GitHub repo ini **publik** (per 27 Okt 2026), walau dokumen lama menyebutnya privat. Jangan menaruh kunci, data masjid, atau foto pribadi di sini.
+- Branch kerja `codex/approved-service-brand-20261010` dengan perubahan ikon lokal belum di-commit.
+
+**Uji:** `.\gradlew.bat :app:assembleDebug :app:testDebugUnitTest`. Dokumen `ANALISIS_REDESIGN.md`, `PERBAIKAN_*.md`, `PLAYSTORE_*.md`, `RELEASE_NOTES.md` adalah riwayat/rencana; cocokkan dengan kode.
