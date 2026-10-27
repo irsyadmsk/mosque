@@ -183,7 +183,11 @@ fun SettingsDialog(
                         }
                     }
 
-                    Text("Credit by Muhammad Irsyad Sirojul Khoeir (irsyads.com)", modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp), color = TextWhiteDim, fontSize = 10.sp)
+                    Row(modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        LogoPenaIrsyads(Modifier.height(24.dp), warna = TextWhiteDim)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Credit by Muhammad Irsyad Sirojul Khoeir (irsyads.com)", color = TextWhiteDim, fontSize = 10.sp)
+                    }
 
                     // Content Area: Sidebar + Active Tab Content
                     Row(
